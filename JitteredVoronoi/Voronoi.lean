@@ -69,13 +69,13 @@ theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (wit c) :
     simp only [Set.mem_Ico]
     exact ⟨⟨by exact_mod_cast h5, by exact_mod_cast h6⟩, ⟨by exact_mod_cast h7, by exact_mod_cast h8⟩⟩
   · simp only [Set.mem_Ico]
-    have hx := far_mem (pt c).1 d.1
-    have hy := far_mem (pt c).2 d.2
+    have hx := far_mem (data c).test.1 d.1
+    have hy := far_mem (data c).test.2 d.2
     exact ⟨⟨by exact_mod_cast hx.1, by exact_mod_cast hx.2⟩, ⟨by exact_mod_cast hy.1, by exact_mod_cast hy.2⟩⟩
 
 theorem sqDist_ptR (c : ℤ × ℤ) (s : ℚ × ℚ) :
-    sqDist (ptR c) (((s.1 : ℚ) : ℝ), ((s.2 : ℚ) : ℝ)) = ((sqQ (pt c) s : ℚ) : ℝ) := by
-  simp only [sqDist, sqQ, ptR]
+    sqDist (ptR c) (((s.1 : ℚ) : ℝ), ((s.2 : ℚ) : ℝ)) = ((sqQ (data c).test s : ℚ) : ℝ) := by
+  simp only [sqDist, sqQ]
   push_cast
   ring
 
@@ -85,13 +85,13 @@ theorem ptR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
   intro d hd
   simp only [Set.mem_compl_iff, Set.mem_singleton_iff] at hd
   obtain ⟨-, -, -, ⟨hu1, hu2, hv1, hv2⟩, hr⟩ := data_check c hc
-  have e0 : wit c (0, 0) = (((p0 c).1 : ℝ), ((p0 c).2 : ℝ)) := by simp [wit]
+  have e0 : wit c (0, 0) = (data c).originR := by simp [wit]
   rw [e0]
   by_cases hd0 : d = (0, 0)
   · subst hd0; rw [e0]
-  have ed : wit c d = ((far (pt c).1 d.1 : ℝ), (far (pt c).2 d.2 : ℝ)) := by
+  have ed : wit c d = ((far (data c).test.1 d.1 : ℝ), (far (data c).test.2 d.2 : ℝ)) := by
     rw [wit, if_neg hd0, if_neg hd]
-  rw [ed, sqDist_ptR c (p0 c), sqDist_ptR c (far (pt c).1 d.1, far (pt c).2 d.2)]
+  rw [ed, sqDist_ptR c (data c).origin, sqDist_ptR c (far (data c).test.1 d.1, far (data c).test.2 d.2)]
   rw [Rat.cast_le]
   by_cases hwin : d.1.natAbs ≤ 5 ∧ d.2.natAbs ≤ 5
   · obtain ⟨a, b⟩ := d
@@ -99,10 +99,10 @@ theorem ptR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
   · have h6 : 6 ≤ d.1.natAbs ∨ 6 ≤ d.2.natAbs := by omega
     simp only [sqQ] at hr ⊢
     rcases h6 with h6 | h6
-    · have := far_big (pt c).1 hu1 hu2 d.1 h6
-      nlinarith [mul_self_nonneg ((pt c).2 - far (pt c).2 d.2)]
-    · have := far_big (pt c).2 hv1 hv2 d.2 h6
-      nlinarith [mul_self_nonneg ((pt c).1 - far (pt c).1 d.1)]
+    · have := far_big (data c).test.1 hu1 hu2 d.1 h6
+      nlinarith [mul_self_nonneg ((data c).test.2 - far (data c).test.2 d.2)]
+    · have := far_big (data c).test.2 hv1 hv2 d.2 h6
+      nlinarith [mul_self_nonneg ((data c).test.1 - far (data c).test.1 d.1)]
 
 /-- The test point is not in the true Voronoi cell: the site in `c` is strictly closer. -/
 theorem ptR_not_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) (h0 : c ≠ (0, 0)) :
@@ -110,8 +110,8 @@ theorem ptR_not_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) (h0 : c ≠ (0, 0)) :
   intro hp
   have h := hp c (Set.mem_univ c)
   obtain ⟨-, -, hlt, -⟩ := data_check c hc
-  have e0 : wit c (0, 0) = (((p0 c).1 : ℝ), ((p0 c).2 : ℝ)) := by simp [wit]
-  have ec : wit c c = (((q c).1 : ℝ), ((q c).2 : ℝ)) := by rw [wit, if_neg h0, if_pos rfl]
+  have e0 : wit c (0, 0) = (data c).originR := by simp [wit]
+  have ec : wit c c = (data c).siteR := by rw [wit, if_neg h0, if_pos rfl]
   rw [e0, ec, sqDist_ptR, sqDist_ptR, Rat.cast_le] at h
   exact absurd hlt (not_lt.2 h)
 
