@@ -159,7 +159,7 @@ theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (wit c) :
     exact ⟨⟨by exact_mod_cast hx.1, by exact_mod_cast hx.2⟩, ⟨by exact_mod_cast hy.1, by exact_mod_cast hy.2⟩⟩
 
 /-- The test point, as a real point. -/
-abbrev ptR (c : ℤ × ℤ) : ℝ × ℝ := (data c).testR
+abbrev testR (c : ℤ × ℤ) : ℝ × ℝ := (data c).testR
 
 end Witness
 

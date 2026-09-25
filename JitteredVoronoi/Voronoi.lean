@@ -57,13 +57,13 @@ theorem voronoiOn_eq_voronoi_of_subset {N : Set (ℤ × ℤ)} (hN : Nbhd \ {(0, 
 namespace Witness
 
 
-private theorem sqDist_ptR (c : ℤ × ℤ) (s : ℚ × ℚ) :
-    sqDist (ptR c) (((s.1 : ℚ) : ℝ), ((s.2 : ℚ) : ℝ)) = ((sqQ (data c).test s : ℚ) : ℝ) := by
+private theorem sqDist_testR (c : ℤ × ℤ) (s : ℚ × ℚ) :
+    sqDist (testR c) (((s.1 : ℚ) : ℝ), ((s.2 : ℚ) : ℝ)) = ((sqQ (data c).test s : ℚ) : ℝ) := by
   simp only [sqQ_eq_sqDist]
 
 /-- The test point lies in the local Voronoi cell computed without `c`. -/
-theorem ptR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
-    ptR c ∈ voronoiOn (wit c) {c}ᶜ (0, 0) := by
+theorem testR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
+    testR c ∈ voronoiOn (wit c) {c}ᶜ (0, 0) := by
   intro d hd
   simp only [Set.mem_compl_iff, Set.mem_singleton_iff] at hd
   obtain ⟨-, -, -, ⟨hu1, hu2, hv1, hv2⟩, hr⟩ := data_check c hc
@@ -73,7 +73,7 @@ theorem ptR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
   · subst hd0; rw [e0]
   have ed : wit c d = ((far (data c).test.1 d.1 : ℝ), (far (data c).test.2 d.2 : ℝ)) := by
     rw [wit, if_neg hd0, if_neg hd]
-  rw [ed, sqDist_ptR c (data c).origin, sqDist_ptR c (far (data c).test.1 d.1, far (data c).test.2 d.2)]
+  rw [ed, sqDist_testR c (data c).origin, sqDist_testR c (far (data c).test.1 d.1, far (data c).test.2 d.2)]
   rw [Rat.cast_le]
   by_cases hwin : d.1.natAbs ≤ 5 ∧ d.2.natAbs ≤ 5
   · obtain ⟨a, b⟩ := d
@@ -87,14 +87,14 @@ theorem ptR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
       nlinarith [mul_self_nonneg ((data c).test.1 - far (data c).test.1 d.1)]
 
 /-- The test point is not in the true Voronoi cell: the site in `c` is strictly closer. -/
-theorem ptR_not_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) (h0 : c ≠ (0, 0)) :
-    ptR c ∉ voronoi (wit c) (0, 0) := by
+theorem testR_not_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) (h0 : c ≠ (0, 0)) :
+    testR c ∉ voronoi (wit c) (0, 0) := by
   intro hp
   have h := hp c (Set.mem_univ c)
   obtain ⟨-, -, hlt, -⟩ := data_check c hc
   have e0 : wit c (0, 0) = (data c).originR := by simp [wit]
   have ec : wit c c = (data c).siteR := by rw [wit, if_neg h0, if_pos rfl]
-  rw [e0, ec, sqDist_ptR, sqDist_ptR, Rat.cast_le] at h
+  rw [e0, ec, sqDist_testR, sqDist_testR, Rat.cast_le] at h
   exact absurd hlt (not_lt.2 h)
 
 end Witness
@@ -105,8 +105,8 @@ theorem exists_jitter_voronoiOn_ne {c : ℤ × ℤ} (hc : c ∈ Nbhd) (h0 : c �
     ∃ f : ℤ × ℤ → ℝ × ℝ, IsJitter f ∧
       ∃ p, p ∈ voronoiOn f {c}ᶜ (0, 0) ∧ p ∉ voronoi f (0, 0) :=
   have hc' := mem_nbhdList hc h0
-  ⟨Witness.wit c, Witness.wit_isJitter hc', Witness.ptR c, Witness.ptR_mem hc',
-    Witness.ptR_not_mem hc' h0⟩
+  ⟨Witness.wit c, Witness.wit_isJitter hc', Witness.testR c, Witness.testR_mem hc',
+    Witness.testR_not_mem hc' h0⟩
 
 /-! ### The characterisation -/
 
