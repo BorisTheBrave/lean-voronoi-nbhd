@@ -17,7 +17,14 @@ namespace JitteredVoronoi
 /-- Squared Euclidean distance on `ℝ × ℝ`. -/
 def sqDist (p q : ℝ × ℝ) : ℝ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
 
-/-- `f` is a jitter: the site of cell `c` lies in `[c.1, c.1 + 1) × [c.2, c.2 + 1)`. -/
+/-- Squared Euclidean distance over `ℚ`. -/
+def sqQ (p q : ℚ × ℚ) : ℚ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
+
+lemma sqQ_eq_sqDist (p q : ℚ × ℚ) : sqQ p q = sqDist (p.1, p.2) (q.1, q.2) := by
+  unfold sqDist sqQ
+  simp
+
+/-- `f` is a jitter: the site of cell `c` lies in side the square cell `[c.1, c.1 + 1) × [c.2, c.2 + 1)`. -/
 def IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop :=
   ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Ico (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Ico (c.2 : ℝ) (c.2 + 1)
 

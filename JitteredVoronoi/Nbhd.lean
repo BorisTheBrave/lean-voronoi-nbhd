@@ -37,4 +37,32 @@ theorem mem_Nbhd_swap {a b : ℤ} : (b, a) ∈ Nbhd ↔ (a, b) ∈ Nbhd := by
 
 theorem origin_mem_Nbhd : ((0 : ℤ), (0 : ℤ)) ∈ Nbhd := mem_Nbhd_of (by decide) (by decide) (by decide)
 
+/-! ### The neighbourhood as a list -/
+
+/-- The 36 non-origin cells of `Nbhd`, as a list (for decidable checks). -/
+def nbhdList : List (ℤ × ℤ) :=
+  let r := (List.range 7).map fun n => (n : ℤ) - 3
+  (r ×ˢ r).filter fun c => c ≠ (0, 0) ∧ c.1.natAbs + c.2.natAbs ≤ 4
+
+theorem mem_nbhdList {c : ℤ × ℤ} (hc : c ∈ Nbhd) (h0 : c ≠ (0, 0)) : c ∈ nbhdList := by
+  obtain ⟨a, b⟩ := c
+  have h : a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4 := hc
+  have ha : -3 ≤ a ∧ a ≤ 3 := by omega
+  have hb : -3 ≤ b ∧ b ≤ 3 := by omega
+  obtain ⟨ha1, ha2⟩ := ha
+  obtain ⟨hb1, hb2⟩ := hb
+  interval_cases a <;> interval_cases b <;> first | decide | (exfalso; revert h h0; decide)
+
+theorem mem_Nbhd_of_mem_nbhdList {c : ℤ × ℤ} (hc : c ∈ nbhdList) : c ∈ Nbhd ∧ c ≠ (0, 0) := by
+  have key : ∀ c ∈ nbhdList,
+      (c.1.natAbs ≤ 3 ∧ c.2.natAbs ≤ 3 ∧ c.1.natAbs + c.2.natAbs ≤ 4) ∧ c ≠ (0, 0) := by
+    decide +kernel
+  exact key c hc
+
+theorem mem_nbhdList_iff {c : ℤ × ℤ} : c ∈ nbhdList ↔ c ∈ Nbhd ∧ c ≠ (0, 0) :=
+  ⟨mem_Nbhd_of_mem_nbhdList, fun h => mem_nbhdList h.1 h.2⟩
+
+/-- The neighbourhood has 36 cells besides the origin. -/
+theorem length_nbhdList : nbhdList.length = 36 := by decide
+
 end JitteredVoronoi

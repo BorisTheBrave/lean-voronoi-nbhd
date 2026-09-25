@@ -56,28 +56,10 @@ theorem voronoiOn_eq_voronoi_of_subset {N : Set (ℤ × ℤ)} (hN : Nbhd \ {(0, 
 
 namespace Witness
 
-theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (wit c) := by
-  intro d
-  obtain ⟨⟨h1, h2, h3, h4⟩, ⟨h5, h6, h7, h8⟩, -⟩ := data_check c hc
-  unfold wit
-  split_ifs with hd hd'
-  · subst hd
-    simp only [Set.mem_Ico]
-    push_cast
-    exact ⟨⟨by exact_mod_cast h1, by exact_mod_cast h2⟩, ⟨by exact_mod_cast h3, by exact_mod_cast h4⟩⟩
-  · subst hd'
-    simp only [Set.mem_Ico]
-    exact ⟨⟨by exact_mod_cast h5, by exact_mod_cast h6⟩, ⟨by exact_mod_cast h7, by exact_mod_cast h8⟩⟩
-  · simp only [Set.mem_Ico]
-    have hx := far_mem (data c).test.1 d.1
-    have hy := far_mem (data c).test.2 d.2
-    exact ⟨⟨by exact_mod_cast hx.1, by exact_mod_cast hx.2⟩, ⟨by exact_mod_cast hy.1, by exact_mod_cast hy.2⟩⟩
 
-theorem sqDist_ptR (c : ℤ × ℤ) (s : ℚ × ℚ) :
+private theorem sqDist_ptR (c : ℤ × ℤ) (s : ℚ × ℚ) :
     sqDist (ptR c) (((s.1 : ℚ) : ℝ), ((s.2 : ℚ) : ℝ)) = ((sqQ (data c).test s : ℚ) : ℝ) := by
-  simp only [sqDist, sqQ]
-  push_cast
-  ring
+  simp only [sqQ_eq_sqDist]
 
 /-- The test point lies in the local Voronoi cell computed without `c`. -/
 theorem ptR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
@@ -122,7 +104,7 @@ cell of the origin's point for some jitter. -/
 theorem exists_jitter_voronoiOn_ne {c : ℤ × ℤ} (hc : c ∈ Nbhd) (h0 : c ≠ (0, 0)) :
     ∃ f : ℤ × ℤ → ℝ × ℝ, IsJitter f ∧
       ∃ p, p ∈ voronoiOn f {c}ᶜ (0, 0) ∧ p ∉ voronoi f (0, 0) :=
-  have hc' := Witness.mem_nbhdList hc h0
+  have hc' := mem_nbhdList hc h0
   ⟨Witness.wit c, Witness.wit_isJitter hc', Witness.ptR c, Witness.ptR_mem hc',
     Witness.ptR_not_mem hc' h0⟩
 
@@ -161,9 +143,6 @@ theorem voronoi_restrict_eq_iff (N : Set (ℤ × ℤ)) (h0 : (0, 0) ∈ N) :
   simp only [voronoi_restrict]
 
 /-! ### Concrete consequences -/
-
-/-- The neighbourhood has 37 cells (36 without the origin). -/
-theorem card_nbhdList : Witness.nbhdList.length = 36 := by decide
 
 /-- The `5 × 5` block is not enough: the cell `(3, 0)` is needed. -/
 theorem three_zero_needed :
