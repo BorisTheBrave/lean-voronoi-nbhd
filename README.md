@@ -1,18 +1,16 @@
 # Jittered Voronoi diagrams: which neighbourhood determines a cell?
 
-A *jitter* puts one point (a *site*) in every unit cell `[a, a+1) × [b, b+1)`, `(a, b) ∈ ℤ²`, of
-the plane. The Voronoi cell of a site is the set of points of the plane at least as close to it
-as to every other site. Computing the Voronoi cell of the origin's site from the sites in a
-neighbourhood `N` of cells only gives a set that contains the true cell; when is it equal, for
-every jitter?
+A *jitter* puts one point (a *site*) in every square in a unit square grid `[a, a+1) × [b, b+1)`, `(a, b) ∈ ℤ²`. The Voronoi cell of a site is the set of points of the plane at least as close to it
+as to every other site. 
 
-**Answer (proved here):** exactly when `N` contains the 36 cells
+A *jitter* is infinite, but the easiest way to compute it's Voronoi cells is to take a small 
+neighborhood of sites and compute their Voronoi cells from a finite Voronoi digram. With the right
+neighborhood, some of sites from finite diagram will match the infinite case.
 
-```
-|a| ≤ 3,  |b| ≤ 3,  |a| + |b| ≤ 4,  (a, b) ≠ (0, 0)
-```
+So the question is, what is the smallest neighborhood you need to use to accurately compute
+the Voronoi cell of the site for the (0, 0) square (wlog).
 
-i.e. the `7 × 7` block around the origin with the three cells at each corner removed:
+The answer is a `7 × 7` block around the origin with the three cells at each corner removed:
 
 ```
  .  .  X  X  X  .  .
@@ -24,42 +22,50 @@ i.e. the `7 × 7` block around the origin with the three cells at each corner re
  .  .  X  X  X  .  .
 ```
 
-In particular the `5 × 5` block is **not** enough: the site of the cell `(3, 0)` can be a
-Voronoi neighbour of the origin's site (`three_zero_needed`). The `7 × 7` block is more than
-needed: the cell `(3, 2)` never matters (`three_two_not_needed`).
+This repo contains lean code that *proves* it.
 
 ## Statement
 
-`JitteredVoronoi/Basic.lean` defines
-
-* `sqDist p q` – squared Euclidean distance on `ℝ × ℝ`;
-* `IsJitter f` – `f c ∈ [c.1, c.1+1) × [c.2, c.2+1)` for all `c : ℤ × ℤ`;
-* `voronoiOn f N x = {p | ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y)}` – the Voronoi cell of the
-  site `f x` computed from the sites in `N`; `voronoi_restrict` shows it is the Voronoi cell of
-  the restricted family `f ∘ Subtype.val : N → ℝ × ℝ`;
-* `voronoi f x := voronoiOn f Set.univ x` – the Voronoi cell among all sites;
-
-and `JitteredVoronoi/Nbhd.lean` defines `Nbhd = {(a, b) | |a| ≤ 3, |b| ≤ 3, |a| + |b| ≤ 4}`
-(37 cells including the origin). The main results are
+We define Voronoi cells in terms of points that are closed by squared euclidian distance. 
+(see `voronoiDist_eq` which proves it doesn't matter if you square the distance or not).
 
 ```lean
-theorem voronoiOn_eq_voronoi_iff (N : Set (ℤ × ℤ)) :
-    (∀ f, IsJitter f → voronoiOn f N (0, 0) = voronoi f (0, 0)) ↔ Nbhd \ {(0, 0)} ⊆ N
+/-- Squared Euclidean distance on `ℝ × ℝ`. -/
+def sqDist (p q : ℝ × ℝ) : ℝ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
 
-theorem voronoi_restrict_eq_iff (N : Set (ℤ × ℤ)) (h0 : (0, 0) ∈ N) :
-    (∀ f, IsJitter f → voronoi (fun y : N => f y) ⟨(0, 0), h0⟩ = voronoi f (0, 0)) ↔ Nbhd ⊆ N
+/-- A jitter is a function picking a site in every square in an infite square grid  -/
+def IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop :=
+  ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Ico (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Ico (c.2 : ℝ) (c.2 + 1)
 
-theorem voronoi_eq_voronoiOn_Nbhd (hf : IsJitter f) : voronoi f (0, 0) = voronoiOn f Nbhd (0, 0)
+variable {ι : Type*}
 
-theorem exists_jitter_voronoiOn_ne (hc : c ∈ Nbhd) (h0 : c ≠ (0, 0)) :
-    ∃ f, IsJitter f ∧ ∃ p, p ∈ voronoiOn f {c}ᶜ (0, 0) ∧ p ∉ voronoi f (0, 0)
+/-- Returns the voronoi diagram for a set of sites f filtered to neighborhood N
+    Returns empty set sites outside N.
 
-theorem voronoiDist_eq (f : ι → ℝ × ℝ) (x : ι) : voronoiDist f x = voronoi f x
+    ι will be the full square grid ℤ × ℤ, and  N will be the finite neighbourhood.
+    --/
+def voronoiOn (f : ι → ℝ × ℝ) (N : Set ι) (x : ι) : Set (ℝ × ℝ) :=
+  {p | x ∈ N ∧ ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y)}
+
+/-- Returns the voronoi diagram for a set of sites, with no filter. -/
+abbrev voronoi (f : ι → ℝ × ℝ) (x : ι) : Set (ℝ × ℝ) := voronoiOn f Set.univ x
 ```
 
-The last one says that using the genuine Euclidean distance on `EuclideanSpace ℝ (Fin 2)`
-instead of `sqDist` gives the same cells. Everything depends only on `propext`,
-`Classical.choice`, `Quot.sound` (no `sorry`, no `native_decide`).
+Now we define what we're looking for
+
+```lean
+/-- A sufficient neighborhood is one where you always get the same Voronoi
+site for (0, 0) when restricted to the neighborhood or not -/
+def SufficientNbhd (N : Set (ℤ × ℤ)) : Prop :=
+  ∀ f, IsJitter f → voronoiOn f N (0, 0) = voronoi f (0, 0)
+
+/-- Here's our claimed answer --/
+def Nbhd : Set (ℤ × ℤ) :=
+  {c | c.1.natAbs ≤ 3 ∧ c.2.natAbs ≤ 3 ∧ c.1.natAbs + c.2.natAbs ≤ 4}
+
+/-- Assert it is indeed sufficient, and minimal -/
+theorem nbhd_isLeast : IsLeast {N | SufficientNbhd N} Nbhd
+```
 
 ## Proof
 
@@ -84,13 +90,13 @@ half-open cells, the proof is carried out for an abstract cell convention (`Cell
 reflection. The half-openness is essential — with closed cells the statement is false — and it
 enters exactly through this separation axiom.
 
-*Necessity* (`Witness.lean`). Seven explicit witnesses, in decimal notation, cover the cells
-`(a, b)` with `a ≥ b ≥ 0`; the symmetries of the square transport them to the other 29 cells
-(the witness points lie strictly inside their cells, so half-openness is not disturbed). In each
-witness the site in the cell under test sits next to the test point; every other cell gets its
-corner farthest from the test point (moved inside the half-open cell by `0.01` if needed). The
-finitely many comparisons in the window `|a|, |b| ≤ 5` are checked by `decide +kernel` for all
-36 cells; cells farther out are trivially far.
+*Necessity* (`Witness.lean`).
+We simply supply seven "witnesses" which are a specific assignment of sites and a point to test, which
+break if you don't include a specific cell in the neighborhood. The finitely many comparisons in the window 
+`|a|, |b| ≤ 5` are checked by `decide +kernel` for all 36 cells; cells farther out are trivially far.
+
+
+These witnesses are mirrored to cover all 36 cells.
 
 ## Building
 

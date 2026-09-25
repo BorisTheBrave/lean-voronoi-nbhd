@@ -33,30 +33,47 @@ section Voronoi
 variable {ι : Type*}
 
 /-- The Voronoi cell of the site `f x` computed from the sites `f y`, `y ∈ N`, only: the points
-at least as close to `f x` as to every such `f y`. -/
+at least as close to `f x` as to every such `f y`.  It is empty unless `x ∈ N`. -/
 def voronoiOn (f : ι → ℝ × ℝ) (N : Set ι) (x : ι) : Set (ℝ × ℝ) :=
-  {p | ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y)}
+  {p | x ∈ N ∧ ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y)}
 
 /-- The Voronoi cell of the site `f x` among all sites. -/
 abbrev voronoi (f : ι → ℝ × ℝ) (x : ι) : Set (ℝ × ℝ) := voronoiOn f Set.univ x
+
+theorem mem_voronoiOn_iff {f : ι → ℝ × ℝ} {N : Set ι} {x : ι} {p : ℝ × ℝ} :
+    p ∈ voronoiOn f N x ↔ x ∈ N ∧ ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y) := Iff.rfl
 
 theorem mem_voronoi_iff {f : ι → ℝ × ℝ} {x : ι} {p : ℝ × ℝ} :
     p ∈ voronoi f x ↔ ∀ y, sqDist p (f x) ≤ sqDist p (f y) := by
   simp [voronoiOn]
 
+theorem voronoiOn_eq_empty (f : ι → ℝ × ℝ) {N : Set ι} {x : ι} (hx : x ∉ N) :
+    voronoiOn f N x = ∅ :=
+  Set.eq_empty_of_forall_notMem fun _ hp => hx hp.1
+
+/-- The site itself lies in its Voronoi cell. -/
+theorem site_mem_voronoiOn (f : ι → ℝ × ℝ) {N : Set ι} {x : ι} (hx : x ∈ N) :
+    f x ∈ voronoiOn f N x :=
+  ⟨hx, fun y _ => by
+    unfold sqDist
+    nlinarith [sq_nonneg ((f x).1 - (f y).1), sq_nonneg ((f x).2 - (f y).2)]⟩
+
+theorem voronoi_nonempty (f : ι → ℝ × ℝ) (x : ι) : (voronoi f x).Nonempty :=
+  ⟨f x, site_mem_voronoiOn f (Set.mem_univ x)⟩
+
 /-- The local Voronoi cell is the Voronoi cell of the restricted family. -/
 theorem voronoi_restrict (f : ι → ℝ × ℝ) (N : Set ι) (x : N) :
     voronoi (fun y : N => f y) x = voronoiOn f N x := by
   ext p
-  simp [voronoi, voronoiOn]
+  simp [voronoi, voronoiOn, x.property]
 
-theorem voronoiOn_anti (f : ι → ℝ × ℝ) {N M : Set ι} (h : N ⊆ M) (x : ι) :
+theorem voronoiOn_anti (f : ι → ℝ × ℝ) {N M : Set ι} (h : N ⊆ M) {x : ι} (hx : x ∈ N) :
     voronoiOn f M x ⊆ voronoiOn f N x :=
-  fun _ hp y hy => hp y (h hy)
+  fun _ hp => ⟨hx, fun y hy => hp.2 y (h hy)⟩
 
-theorem voronoi_subset_voronoiOn (f : ι → ℝ × ℝ) (N : Set ι) (x : ι) :
+theorem voronoi_subset_voronoiOn (f : ι → ℝ × ℝ) {N : Set ι} {x : ι} (hx : x ∈ N) :
     voronoi f x ⊆ voronoiOn f N x :=
-  voronoiOn_anti f (Set.subset_univ N) x
+  voronoiOn_anti f (Set.subset_univ N) hx
 
 end Voronoi
 
