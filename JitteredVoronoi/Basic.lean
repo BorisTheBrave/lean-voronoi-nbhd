@@ -25,18 +25,17 @@ section Voronoi
 
 variable {ι : Type*}
 
-/-- The Voronoi cell of the site `f x` among all sites: the points at least as close to `f x` as
-to every `f y`. -/
-def voronoi (f : ι → ℝ × ℝ) (x : ι) : Set (ℝ × ℝ) :=
-  {p | ∀ y, sqDist p (f x) ≤ sqDist p (f y)}
-
-/-- The Voronoi cell of `f x` computed from the sites in `N` only. -/
+/-- The Voronoi cell of the site `f x` computed from the sites `f y`, `y ∈ N`, only: the points
+at least as close to `f x` as to every such `f y`. -/
 def voronoiOn (f : ι → ℝ × ℝ) (N : Set ι) (x : ι) : Set (ℝ × ℝ) :=
   {p | ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y)}
 
-theorem voronoiOn_univ (f : ι → ℝ × ℝ) (x : ι) : voronoiOn f Set.univ x = voronoi f x := by
-  ext p
-  simp [voronoiOn, voronoi]
+/-- The Voronoi cell of the site `f x` among all sites. -/
+abbrev voronoi (f : ι → ℝ × ℝ) (x : ι) : Set (ℝ × ℝ) := voronoiOn f Set.univ x
+
+theorem mem_voronoi_iff {f : ι → ℝ × ℝ} {x : ι} {p : ℝ × ℝ} :
+    p ∈ voronoi f x ↔ ∀ y, sqDist p (f x) ≤ sqDist p (f y) := by
+  simp [voronoiOn]
 
 /-- The local Voronoi cell is the Voronoi cell of the restricted family. -/
 theorem voronoi_restrict (f : ι → ℝ × ℝ) (N : Set ι) (x : N) :
@@ -50,7 +49,7 @@ theorem voronoiOn_anti (f : ι → ℝ × ℝ) {N M : Set ι} (h : N ⊆ M) (x :
 
 theorem voronoi_subset_voronoiOn (f : ι → ℝ × ℝ) (N : Set ι) (x : ι) :
     voronoi f x ⊆ voronoiOn f N x :=
-  fun _ hp y _ => hp y
+  voronoiOn_anti f (Set.subset_univ N) x
 
 end Voronoi
 
@@ -74,7 +73,7 @@ def voronoiDist {ι : Type*} (f : ι → ℝ × ℝ) (x : ι) : Set (ℝ × ℝ)
 /-- Squared and genuine Euclidean distance give the same Voronoi cells. -/
 theorem voronoiDist_eq {ι : Type*} (f : ι → ℝ × ℝ) (x : ι) : voronoiDist f x = voronoi f x := by
   ext p
-  simp only [voronoiDist, voronoi, Set.mem_ofPred_eq, dist_toE]
+  simp only [voronoiDist, Set.mem_ofPred_eq, dist_toE, mem_voronoi_iff]
   exact forall_congr' fun y => Real.sqrt_le_sqrt_iff (sqDist_nonneg _ _)
 
 end JitteredVoronoi

@@ -26,7 +26,7 @@ the sites in `Nbhd`. -/
 theorem voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) :
     voronoi f (0, 0) = voronoiOn f Nbhd (0, 0) := by
   apply Set.Subset.antisymm (voronoi_subset_voronoiOn f Nbhd (0, 0))
-  intro p hp c
+  intro p hp c _
   by_contra hlt
   rw [not_le] at hlt
   by_cases hc : c ∈ Nbhd
@@ -108,7 +108,7 @@ theorem ptR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) :
 theorem ptR_not_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) (h0 : c ≠ (0, 0)) :
     ptR c ∉ voronoi (wit c) (0, 0) := by
   intro hp
-  have h := hp c
+  have h := hp c (Set.mem_univ c)
   obtain ⟨-, -, hlt, -⟩ := data_check c hc
   have e0 : wit c (0, 0) = (((p0 c).1 : ℝ), ((p0 c).2 : ℝ)) := by simp [wit]
   have ec : wit c c = (((q c).1 : ℝ), ((q c).2 : ℝ)) := by rw [wit, if_neg h0, if_pos rfl]

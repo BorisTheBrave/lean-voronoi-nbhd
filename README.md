@@ -34,9 +34,10 @@ needed: the cell `(3, 2)` never matters (`three_two_not_needed`).
 
 * `sqDist p q` – squared Euclidean distance on `ℝ × ℝ`;
 * `IsJitter f` – `f c ∈ [c.1, c.1+1) × [c.2, c.2+1)` for all `c : ℤ × ℤ`;
-* `voronoi f x = {p | ∀ y, sqDist p (f x) ≤ sqDist p (f y)}` – the Voronoi cell of the site `f x`;
-* `voronoiOn f N x` – the same with `y` ranging over `N` only; `voronoi_restrict` shows it is the
-  Voronoi cell of the restricted family `f ∘ Subtype.val : N → ℝ × ℝ`;
+* `voronoiOn f N x = {p | ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y)}` – the Voronoi cell of the
+  site `f x` computed from the sites in `N`; `voronoi_restrict` shows it is the Voronoi cell of
+  the restricted family `f ∘ Subtype.val : N → ℝ × ℝ`;
+* `voronoi f x := voronoiOn f Set.univ x` – the Voronoi cell among all sites;
 
 and `JitteredVoronoi/Nbhd.lean` defines `Nbhd = {(a, b) | |a| ≤ 3, |b| ≤ 3, |a| + |b| ≤ 4}`
 (37 cells including the origin). The main results are
