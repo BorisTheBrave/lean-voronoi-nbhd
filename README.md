@@ -30,7 +30,7 @@ needed: the cell `(3, 2)` never matters (`three_two_not_needed`).
 
 ## Statement
 
-`JitteredVoronoi/Voronoi.lean` defines
+`JitteredVoronoi/Basic.lean` defines
 
 * `sqDist p q` – squared Euclidean distance on `ℝ × ℝ`;
 * `IsJitter f` – `f c ∈ [c.1, c.1+1) × [c.2, c.2+1)` for all `c : ℤ × ℤ`;
@@ -83,11 +83,13 @@ half-open cells, the proof is carried out for an abstract cell convention (`Cell
 reflection. The half-openness is essential — with closed cells the statement is false — and it
 enters exactly through this separation axiom.
 
-*Necessity* (`Witness.lean`). For each of the 36 cells an explicit rational jitter and test point
-are listed in `table`. The site in the cell under test is the point of that cell nearest to the
-test point; every other cell gets its corner farthest from the test point (moved inside the
-half-open cell by `1/100` if needed). The finitely many comparisons in the window `|a|, |b| ≤ 5`
-are checked by `decide +kernel`; cells farther out are trivially far.
+*Necessity* (`Witness.lean`). Seven explicit witnesses, in decimal notation, cover the cells
+`(a, b)` with `a ≥ b ≥ 0`; the symmetries of the square transport them to the other 29 cells
+(the witness points lie strictly inside their cells, so half-openness is not disturbed). In each
+witness the site in the cell under test sits next to the test point; every other cell gets its
+corner farthest from the test point (moved inside the half-open cell by `0.01` if needed). The
+finitely many comparisons in the window `|a|, |b| ≤ 5` are checked by `decide +kernel` for all
+36 cells; cells farther out are trivially far.
 
 ## Building
 

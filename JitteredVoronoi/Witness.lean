@@ -8,11 +8,12 @@ such that `p` is at least as close to the origin's point as to every other site 
 in `c`, which is strictly closer.  So dropping `c` from the neighbourhood changes the Voronoi
 cell of the origin's point.
 
-The data (origin point, test point, site in `c`) are rational and listed in `table`; every other
-cell `d` gets the corner of `d` farthest from `p` (pulled inside the half-open cell by `1/100`
-when that corner is excluded).  The finitely many comparisons with cells in the window
+The data (origin point, test point, site in `c`) are given in decimal notation for the seven
+cells with `a ≥ b ≥ 0` (`base`) and transported to the other cells by the symmetries of the
+square (`transform`); every other cell `d` gets the corner of `d` farthest from `p` (pulled
+inside the half-open cell by `0.01` when that corner is excluded).  The finitely many comparisons with cells in the window
 `|a|, |b| ≤ 5` are checked by `decide`; cells farther out are at squared distance at least `16`
-from `p`, which exceeds every squared radius in the table.
+from `p`, which exceeds every squared radius that occurs.
 -/
 
 namespace JitteredVoronoi
@@ -20,7 +21,7 @@ namespace JitteredVoronoi
 namespace Witness
 
 /-- The perturbation used to stay inside half-open cells. -/
-def eps : ℚ := 1 / 100
+def eps : ℚ := 0.01
 
 /-- The end of the cell `[a, a+1)` farthest from `u` (as a point of the half-open cell). -/
 def far (u : ℚ) (a : ℤ) : ℚ := if u ≤ a + 1 / 2 then a + 1 - eps else a
@@ -28,52 +29,32 @@ def far (u : ℚ) (a : ℤ) : ℚ := if u ≤ a + 1 / 2 then a + 1 - eps else a
 /-- Squared Euclidean distance over `ℚ`. -/
 def sqQ (p q : ℚ × ℚ) : ℚ := (p.1 - q.1) * (p.1 - q.1) + (p.2 - q.2) * (p.2 - q.2)
 
-/-- For each cell: the origin's point `p0`, the test point `p`, and the site `q` placed in the
-cell. -/
-def table : List ((ℤ × ℤ) × (ℚ × ℚ) × (ℚ × ℚ) × (ℚ × ℚ)) := [
-  ((-3, -1), (((1 : ℚ) / 20, (1 : ℚ) / 10), (((-11 : ℚ) / 10), (0 : ℚ)), (((-201 : ℚ) / 100), ((-1 : ℚ) / 100)))),
-  ((-3, 0), (((1 : ℚ) / 20, (1 : ℚ) / 10), (((-11 : ℚ) / 10), (0 : ℚ)), (((-201 : ℚ) / 100), (0 : ℚ)))),
-  ((-3, 1), (((1 : ℚ) / 10, (3 : ℚ) / 4), (((-21 : ℚ) / 20), (1 : ℚ)), (((-201 : ℚ) / 100), (1 : ℚ)))),
-  ((-2, -2), (((0 : ℚ), (0 : ℚ)), (((-1 : ℚ) / 4), (-1 : ℚ)), (((-101 : ℚ) / 100), ((-101 : ℚ) / 100)))),
-  ((-2, -1), (((1 : ℚ) / 10, (1 : ℚ) / 10), (((-4 : ℚ) / 5), (0 : ℚ)), (((-101 : ℚ) / 100), ((-1 : ℚ) / 100)))),
-  ((-2, 0), (((1 : ℚ) / 10, (9 : ℚ) / 10), (((-4 : ℚ) / 5), (1 : ℚ)), (((-101 : ℚ) / 100), (99 : ℚ) / 100))),
-  ((-2, 1), (((1 : ℚ) / 10, (9 : ℚ) / 10), (((-4 : ℚ) / 5), (1 : ℚ)), (((-101 : ℚ) / 100), (1 : ℚ)))),
-  ((-2, 2), (((0 : ℚ), (19 : ℚ) / 20), (((-1 : ℚ) / 5), (2 : ℚ)), (((-101 : ℚ) / 100), (2 : ℚ)))),
-  ((-1, -3), (((0 : ℚ), (1 : ℚ) / 20), ((0 : ℚ), ((-11 : ℚ) / 10)), (((-1 : ℚ) / 100), ((-201 : ℚ) / 100)))),
-  ((-1, -2), (((1 : ℚ) / 10, (1 : ℚ) / 10), ((0 : ℚ), ((-4 : ℚ) / 5)), (((-1 : ℚ) / 100), ((-101 : ℚ) / 100)))),
-  ((-1, -1), (((1 : ℚ) / 10, (3 : ℚ) / 20), (((-11 : ℚ) / 20), ((-11 : ℚ) / 20)), (((-11 : ℚ) / 20), ((-11 : ℚ) / 20)))),
-  ((-1, 0), (((19 : ℚ) / 20, (11 : ℚ) / 20), (((-1 : ℚ) / 20), (9 : ℚ) / 20), (((-1 : ℚ) / 20), (9 : ℚ) / 20))),
-  ((-1, 1), (((1 : ℚ) / 10, (9 : ℚ) / 10), (((-11 : ℚ) / 20), (31 : ℚ) / 20), (((-11 : ℚ) / 20), (31 : ℚ) / 20))),
-  ((-1, 2), (((1 : ℚ) / 10, (9 : ℚ) / 10), ((0 : ℚ), (9 : ℚ) / 5), (((-1 : ℚ) / 100), (2 : ℚ)))),
-  ((-1, 3), (((0 : ℚ), (19 : ℚ) / 20), ((0 : ℚ), (21 : ℚ) / 10), (((-1 : ℚ) / 100), (3 : ℚ)))),
-  ((0, -3), (((0 : ℚ), (1 : ℚ) / 20), ((0 : ℚ), ((-11 : ℚ) / 10)), ((0 : ℚ), ((-201 : ℚ) / 100)))),
-  ((0, -2), (((1 : ℚ) / 10, (1 : ℚ) / 10), ((0 : ℚ), ((-4 : ℚ) / 5)), ((0 : ℚ), ((-101 : ℚ) / 100)))),
-  ((0, -1), (((7 : ℚ) / 20, (19 : ℚ) / 20), ((11 : ℚ) / 20, ((-1 : ℚ) / 20)), ((11 : ℚ) / 20, ((-1 : ℚ) / 20)))),
-  ((0, 1), (((3 : ℚ) / 5, (1 : ℚ) / 20), ((9 : ℚ) / 20, (21 : ℚ) / 20), ((9 : ℚ) / 20, (21 : ℚ) / 20))),
-  ((0, 2), (((9 : ℚ) / 10, (9 : ℚ) / 10), ((1 : ℚ), (9 : ℚ) / 5), ((99 : ℚ) / 100, (2 : ℚ)))),
-  ((0, 3), (((19 : ℚ) / 20, (19 : ℚ) / 20), ((1 : ℚ), (21 : ℚ) / 10), ((99 : ℚ) / 100, (3 : ℚ)))),
-  ((1, -3), (((99 : ℚ) / 100, (1 : ℚ) / 20), ((1 : ℚ), ((-11 : ℚ) / 10)), ((1 : ℚ), ((-201 : ℚ) / 100)))),
-  ((1, -2), (((9 : ℚ) / 10, (1 : ℚ) / 10), ((1 : ℚ), ((-4 : ℚ) / 5)), ((1 : ℚ), ((-101 : ℚ) / 100)))),
-  ((1, -1), (((17 : ℚ) / 20, (1 : ℚ) / 10), ((31 : ℚ) / 20, ((-11 : ℚ) / 20)), ((31 : ℚ) / 20, ((-11 : ℚ) / 20)))),
-  ((1, 0), (((1 : ℚ) / 10, (9 : ℚ) / 10), ((21 : ℚ) / 20, (9 : ℚ) / 20), ((21 : ℚ) / 20, (9 : ℚ) / 20))),
-  ((1, 1), (((9 : ℚ) / 10, (17 : ℚ) / 20), ((31 : ℚ) / 20, (31 : ℚ) / 20), ((31 : ℚ) / 20, (31 : ℚ) / 20))),
-  ((1, 2), (((9 : ℚ) / 10, (9 : ℚ) / 10), ((1 : ℚ), (9 : ℚ) / 5), ((1 : ℚ), (2 : ℚ)))),
-  ((1, 3), (((19 : ℚ) / 20, (19 : ℚ) / 20), ((1 : ℚ), (21 : ℚ) / 10), ((1 : ℚ), (3 : ℚ)))),
-  ((2, -2), (((19 : ℚ) / 20, (1 : ℚ) / 2), ((2 : ℚ), ((-1 : ℚ) / 20)), ((2 : ℚ), ((-101 : ℚ) / 100)))),
-  ((2, -1), (((9 : ℚ) / 10, (1 : ℚ) / 10), ((9 : ℚ) / 5, (0 : ℚ)), ((2 : ℚ), ((-1 : ℚ) / 100)))),
-  ((2, 0), (((9 : ℚ) / 10, (9 : ℚ) / 10), ((9 : ℚ) / 5, (1 : ℚ)), ((2 : ℚ), (99 : ℚ) / 100))),
-  ((2, 1), (((9 : ℚ) / 10, (9 : ℚ) / 10), ((9 : ℚ) / 5, (1 : ℚ)), ((2 : ℚ), (1 : ℚ)))),
-  ((2, 2), (((99 : ℚ) / 100, (9 : ℚ) / 10), ((2 : ℚ), (6 : ℚ) / 5), ((2 : ℚ), (2 : ℚ)))),
-  ((3, -1), (((9 : ℚ) / 10, (1 : ℚ) / 4), ((41 : ℚ) / 20, (0 : ℚ)), ((3 : ℚ), ((-1 : ℚ) / 100)))),
-  ((3, 0), (((9 : ℚ) / 10, (1 : ℚ) / 4), ((41 : ℚ) / 20, (0 : ℚ)), ((3 : ℚ), (0 : ℚ)))),
-  ((3, 1), (((19 : ℚ) / 20, (99 : ℚ) / 100), ((21 : ℚ) / 10, (1 : ℚ)), ((3 : ℚ), (1 : ℚ))))]
+/-- Witness data for the seven cells `(a, b)` with `a ≥ b ≥ 0` in `Nbhd`: the origin's point
+`p0`, the test point `p`, and the site `q` placed in the cell.  All coordinates of `p0` and `q`
+lie strictly inside their cells, so the dihedral images below are valid witnesses too. -/
+def base : ℤ × ℤ → (ℚ × ℚ) × (ℚ × ℚ) × (ℚ × ℚ)
+  | (1, 0) => ((0.1, 0.9), (1.05, 0.45), (1.05, 0.45))
+  | (1, 1) => ((0.9, 0.85), (1.55, 1.55), (1.55, 1.55))
+  | (2, 0) => ((0.9, 0.9), (1.8, 1), (2.01, 0.99))
+  | (2, 1) => ((0.9, 0.9), (1.8, 1), (2.01, 1.01))
+  | (2, 2) => ((0.99, 0.9), (2, 1.2), (2.01, 2.01))
+  | (3, 0) => ((0.9, 0.25), (2.05, 0), (3.01, 0.01))
+  | (3, 1) => ((0.95, 0.99), (2.1, 1), (3.01, 1.01))
+  | _ => ((0, 0), (0, 0), (0, 0))
 
-/-- The 36 non-origin cells of `Nbhd`. -/
-def nbhdList : List (ℤ × ℤ) := [(-3, -1), (-3, 0), (-3, 1), (-2, -2), (-2, -1), (-2, 0), (-2, 1), (-2, 2), (-1, -3), (-1, -2), (-1, -1), (-1, 0), (-1, 1), (-1, 2), (-1, 3), (0, -3), (0, -2), (0, -1), (0, 1), (0, 2), (0, 3), (1, -3), (1, -2), (1, -1), (1, 0), (1, 1), (1, 2), (1, 3), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -1), (3, 0), (3, 1)]
+/-- The representative `(max |a| |b|, min |a| |b|)` of the cell `(a, b)` under the symmetries of
+the square. -/
+def rep (c : ℤ × ℤ) : ℤ × ℤ := (max c.1.natAbs c.2.natAbs, min c.1.natAbs c.2.natAbs)
 
-/-- Look up the data of a cell (the default is never used). -/
+/-- The symmetry of the plane taking the cell `rep c` to the cell `c`: swap the coordinates if
+`|a| < |b|`, then reflect `x ↦ 1 - x` if `a < 0` and `y ↦ 1 - y` if `b < 0`. -/
+def transform (c : ℤ × ℤ) (pt : ℚ × ℚ) : ℚ × ℚ :=
+  let pt' := if c.1.natAbs < c.2.natAbs then (pt.2, pt.1) else pt
+  (if c.1 < 0 then 1 - pt'.1 else pt'.1, if c.2 < 0 then 1 - pt'.2 else pt'.2)
+
+/-- The witness data of an arbitrary cell, by symmetry from its representative. -/
 def data (c : ℤ × ℤ) : (ℚ × ℚ) × (ℚ × ℚ) × (ℚ × ℚ) :=
-  ((table.find? fun e => e.1 = c).map (·.2)).getD ((0, 0), (0, 0), (0, 0))
+  (transform c (base (rep c)).1, transform c (base (rep c)).2.1, transform c (base (rep c)).2.2)
 
 /-- The origin's point. -/
 def p0 (c : ℤ × ℤ) : ℚ × ℚ := (data c).1
@@ -82,8 +63,13 @@ def pt (c : ℤ × ℤ) : ℚ × ℚ := (data c).2.1
 /-- The site placed in `c`. -/
 def q (c : ℤ × ℤ) : ℚ × ℚ := (data c).2.2
 
+/-- The 36 non-origin cells of `Nbhd`. -/
+def nbhdList : List (ℤ × ℤ) :=
+  let r := (List.range 7).map fun n => (n : ℤ) - 3
+  (r ×ˢ r).filter fun c => c ≠ (0, 0) ∧ c.1.natAbs + c.2.natAbs ≤ 4
+
 /-- The integers `-5, …, 5`. -/
-def window : List ℤ := [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+def window : List ℤ := (List.range 11).map fun n => (n : ℤ) - 5
 
 /-! ### The decidable checks -/
 
