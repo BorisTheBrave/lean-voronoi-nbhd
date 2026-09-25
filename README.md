@@ -1,95 +1,93 @@
-# Jittered grids: what is the local neighborhood
+# Jittered Voronoi diagrams: which neighbourhood determines a cell?
 
-A [Jittered Voronoi grid](https://www.boristhebrave.com/docs/sylves/1/articles/grids/jitteredsquaregrid.html) is 
-constructed by starting with a square grid, picking a random point for each cell, and constructing an
-infinite Voronoi diagram.
+A *jitter* puts one point (a *site*) in every unit cell `[a, a+1) × [b, b+1)`, `(a, b) ∈ ℤ²`, of
+the plane. The Voronoi cell of a site is the set of points of the plane at least as close to it
+as to every other site. Computing the Voronoi cell of the origin's site from the sites in a
+neighbourhood `N` of cells only gives a set that contains the true cell; when is it equal, for
+every jitter?
 
-To construct an infinite Voronoi diagram, one typically builds it cell by cell. To get one cell of the output,
-consider a neighborhood of the input point, build a finite Voronoi diagram on that, and copy the central polygon
-of the diagram into the output.
-
-With a sufficiently neighborhood, this always gives an accurate result. But what is that neighborhood? This lean repo
-proves that it's the following circle of 21 points (a 5 × 5 without corners).
+**Answer (proved here):** exactly when `N` contains the 36 cells
 
 ```
- .  X  X  X  .
- X  X  X  X  X
- X  X  o  X  X
- X  X  X  X  X
- .  X  X  X  .
+|a| ≤ 3,  |b| ≤ 3,  |a| + |b| ≤ 4,  (a, b) ≠ (0, 0)
 ```
 
+i.e. the `7 × 7` block around the origin with the three cells at each corner removed:
 
-We define a *jitter* as a function that puts one point in every unit cell `[a, a+1) × [b, b+1)` (`a, b : ℤ`) of the plane.
+```
+ .  .  X  X  X  .  .
+ .  X  X  X  X  X  .
+ X  X  X  X  X  X  X
+ X  X  X  o  X  X  X
+ X  X  X  X  X  X  X
+ .  X  X  X  X  X  .
+ .  .  X  X  X  .  .
+```
 
-
-From the point of the origin cell `(0, 0)`, which other cells `(A, B)` can contain the point
-nearest to it, over all jitters?
-
-
-**Answer (proved here):** exactly the `5 × 5` block around the origin with the origin and the
-four corners `(±2, ±2)` removed. Twenty cells:
-
-
-So the `3 × 3` neighbourhood is not enough (`(2, 1)` can be nearest), and the full `5 × 5`
-block is more than needed (`(2, 2)` never is).
+In particular the `5 × 5` block is **not** enough: the site of the cell `(3, 0)` can be a
+Voronoi neighbour of the origin's site (`three_zero_needed`). The `7 × 7` block is more than
+needed: the cell `(3, 2)` never matters (`three_two_not_needed`).
 
 ## Statement
 
-`JitteredVoronoi/Basic.lean` defines
+`JitteredVoronoi/Voronoi.lean` defines
 
 * `sqDist p q` – squared Euclidean distance on `ℝ × ℝ`;
-* `IsJitter f` – `f a b ∈ [a, a+1) × [b, b+1)` for all `a b : ℤ`;
-* `IsNearest f A B` – `(A, B) ≠ (0, 0)` and `sqDist (f A B) (f 0 0) ≤ sqDist (f a b) (f 0 0)`
-  for every `(a, b) ≠ (0, 0)` (ties allowed);
-* `NearestCells = {c | ∃ f, IsJitter f ∧ IsNearest f c.1 c.2}`;
-* `Answer = {c | c ≠ (0, 0) ∧ |c.1| ≤ 2 ∧ |c.2| ≤ 2 ∧ ¬(|c.1| = 2 ∧ |c.2| = 2)}`.
+* `IsJitter f` – `f c ∈ [c.1, c.1+1) × [c.2, c.2+1)` for all `c : ℤ × ℤ`;
+* `voronoi f x = {p | ∀ y, sqDist p (f x) ≤ sqDist p (f y)}` – the Voronoi cell of the site `f x`;
+* `voronoiOn f N x` – the same with `y` ranging over `N` only; `voronoi_restrict` shows it is the
+  Voronoi cell of the restricted family `f ∘ Subtype.val : N → ℝ × ℝ`;
 
-`JitteredVoronoi/Main.lean` proves
+and `JitteredVoronoi/Nbhd.lean` defines `Nbhd = {(a, b) | |a| ≤ 3, |b| ≤ 3, |a| + |b| ≤ 4}`
+(37 cells including the origin). The main results are
 
 ```lean
-theorem nearestCells_eq_answer : NearestCells = Answer
-theorem nearestCells_eq_finset : NearestCells = ↑Construction.answerList.toFinset
-theorem card_answer : Construction.answerList.toFinset.card = 20
-theorem two_one_mem : (2, 1) ∈ NearestCells
-theorem two_two_not_mem : (2, 2) ∉ NearestCells
-theorem threeBox_subset : (A, B) ≠ (0, 0) → |A| ≤ 1 → |B| ≤ 1 → (A, B) ∈ NearestCells
-theorem subset_fiveBox : (A, B) ∈ NearestCells → |A| ≤ 2 ∧ |B| ≤ 2
-theorem nearestCells_dist_eq_answer :
-    {c | ∃ f, IsJitter f ∧ IsNearestDist f c.1 c.2} = Answer
+theorem voronoiOn_eq_voronoi_iff (N : Set (ℤ × ℤ)) :
+    (∀ f, IsJitter f → voronoiOn f N (0, 0) = voronoi f (0, 0)) ↔ Nbhd \ {(0, 0)} ⊆ N
+
+theorem voronoi_restrict_eq_iff (N : Set (ℤ × ℤ)) (h0 : (0, 0) ∈ N) :
+    (∀ f, IsJitter f → voronoi (fun y : N => f y) ⟨(0, 0), h0⟩ = voronoi f (0, 0)) ↔ Nbhd ⊆ N
+
+theorem voronoi_eq_voronoiOn_Nbhd (hf : IsJitter f) : voronoi f (0, 0) = voronoiOn f Nbhd (0, 0)
+
+theorem exists_jitter_voronoiOn_ne (hc : c ∈ Nbhd) (h0 : c ≠ (0, 0)) :
+    ∃ f, IsJitter f ∧ ∃ p, p ∈ voronoiOn f {c}ᶜ (0, 0) ∧ p ∉ voronoi f (0, 0)
+
+theorem voronoiDist_eq (f : ι → ℝ × ℝ) (x : ι) : voronoiDist f x = voronoi f x
 ```
 
-The last one restates the result with the genuine Euclidean distance on
-`EuclideanSpace ℝ (Fin 2)` instead of `sqDist`.
-
-All theorems depend only on `propext`, `Classical.choice`, `Quot.sound` (no `sorry`, no
-`native_decide`).
+The last one says that using the genuine Euclidean distance on `EuclideanSpace ℝ (Fin 2)`
+instead of `sqDist` gives the same cells. Everything depends only on `propext`,
+`Classical.choice`, `Quot.sound` (no `sorry`, no `native_decide`).
 
 ## Proof
 
-*Necessity* (`Necessity.lean`). Write `(x₀, y₀) = f 0 0 ∈ [0, 1)²`. Every point of cell `(1, 0)`
-has squared distance `< (2 − x₀)² + 1`, every point of cell `(−1, 0)` has squared distance
-`< (x₀ + 1)² + 1`, and symmetrically for `(0, ±1)`. If `A ≥ 3`, or `A = 2` and `|B| = 2`, every
-point of cell `(A, B)` has squared distance `≥ (2 − x₀)² + 1`, so `(A, B)` is beaten by `(1, 0)`.
-The remaining cases are mirror images (`nlinarith` does the algebra).
+*Sufficiency* (`Blocking.lean`). Fix the origin's site `(x₀, y₀)` and a test point `p = (u, v)`.
+Say a cell *threatens* `p` if it contains a point strictly closer to `p` than `(x₀, y₀)`, and
+*blocks* `p` if all its points are strictly closer. The key lemma `hasBlocker_of_threat` says
+that if any cell outside `Nbhd` threatens `p`, some non-origin cell of `Nbhd` blocks `p`; so `p`
+is already excluded from the local Voronoi cell.
 
-*Sufficiency* (`Construction.lean`). For a target `(A, B)` in `Answer`, the origin point is
-`(1/2 + sgn A/10, 1/2 + sgn B/10)`, the target point is the corner of its cell nearest to the
-origin point (moved inward by `1/100` when that corner is excluded by half-openness), and every
-other cell gets a point as far from the origin point as its half-open cell allows (again up to
-`1/100`). All coordinates are rational, so the `20 × 23` comparisons inside the `5 × 5` block are
-checked by `decide +kernel`; cells outside the block are at squared distance `≥ 4`, while the
-target is at squared distance `≤ 4`.
+* If `u ≥ 5/2` (or the mirror images), the column `x ∈ [2, 3]` in the row of `v` blocks,
+  whatever the threat (`far_right`).
+* Otherwise `p` lies in `(-3/2, 5/2)²` and the threatening cell is reduced, by monotonicity, to
+  one of three frontier configurations: a threat from `x ≥ 4` in the rows `0 ≤ y ≤ 1` or
+  `1 ≤ y ≤ 2` (`coreR0`, `coreR1`, blocked by `(2, 1)`, `(2, 0)` or `(2, -1)` depending on
+  `v`), and a threat from the quadrant `x ≥ 3`, `y ≥ 2` (`coreD`, blocked by `(2, 1)`, `(1, 1)`
+  or `(1, 2)`). Each case is a corner-by-corner bound followed by (non)linear arithmetic.
 
-## Remarks
+To use the reflections `x ↦ 1 - x`, `y ↦ 1 - y` and the swap `x ↔ y` legitimately despite the
+half-open cells, the proof is carried out for an abstract cell convention (`CellStructure` in
+`Cell.lean`): a family of sets `I a ⊆ [a, a+1]` with `x' - x > a' - a - 1` for `x ∈ I a`,
+`x' ∈ I a'`, `a < a'`. Both half-open conventions satisfy this, and the axioms are stable under
+reflection. The half-openness is essential — with closed cells the statement is false — and it
+enters exactly through this separation axiom.
 
-* The grid is indexed by `ℤ × ℤ`, not `ℕ × ℕ`, since the plane is tiled in every direction.
-* Because cells are half-open, the answer is sensitive to the convention: with closed cells and
-  ties allowed, `(2, 2)` would tie with `(1, 0)` for the origin point `(1, 1)`. With the
-  half-open convention there is no such tie, and allowing or forbidding ties gives the same set.
-* This is the nearest-neighbour question only. The Voronoi cell of a point is determined by all
-  its Voronoi neighbours, which can be farther away than its nearest neighbour, so the fact that
-  `5 × 5` suffices for the Voronoi cell is a separate (stronger) statement not proved here.
+*Necessity* (`Witness.lean`). For each of the 36 cells an explicit rational jitter and test point
+are listed in `table`. The site in the cell under test is the point of that cell nearest to the
+test point; every other cell gets its corner farthest from the test point (moved inside the
+half-open cell by `1/100` if needed). The finitely many comparisons in the window `|a|, |b| ≤ 5`
+are checked by `decide +kernel`; cells farther out are trivially far.
 
 ## Building
 
