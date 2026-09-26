@@ -1,14 +1,13 @@
 # Jittered Voronoi diagrams: which neighbourhood determines a cell?
 
-A *jitter* puts one point (a *site*) in every square in a unit square grid `[a, a+1) × [b, b+1)`, `(a, b) ∈ ℤ²`. The Voronoi cell of a site is the set of points of the plane at least as close to it
-as to every other site. 
+A [jittered voronoi diagram](https://www.boristhebrave.com/docs/sylves/1/articles/grids/jitteredsquaregrid.html), also known as a [vectorizable random lattice](https://arxiv.org/abs/cond-mat/9305003) is a partition of the 2d plane into polygons via the following definition:
 
-A *jitter* is infinite, but the easiest way to compute it's Voronoi cells is to take a small 
-neighborhood of sites and compute their Voronoi cells from a finite Voronoi digram. With the right
-neighborhood, some of sites from finite diagram will match the infinite case.
+Define a **jitter** as a collection of distinct points (called **sites**), with exactly one placed in each square of a unit square grid `[a, a+1) × [b, b+1)`, `(a, b) ∈ ℤ²`. The **Voronoi cell** of a site is the set of points of the plane at least as close to it
+as to every other site. The full jittered Voronoi diagram is the collection of Voronoi cells.
 
-So the question is, what is the smallest neighborhood you need to use to accurately compute
-the Voronoi cell of the site for the (0, 0) square (wlog).
+A jitter contains an infinite number of points, but only a finite set of of them are relevant to the calculation of a given Voronoi cell. This is useful in practise for efficient computation of the cells, as it means classic algorithms that work with a finite amount of sites may be re-used.
+
+So the question is, what is the smallest neighborhood you need to use to guarantee that the finite case will result in the same cell as the infinite case. Without loss of generality, we consider the origin square only.
 
 The answer is a `7 × 7` block around the origin with the three cells at each corner removed:
 
@@ -34,10 +33,10 @@ We define Voronoi cells in terms of points that are closed by squared euclidian 
 def sqDist (p q : ℝ × ℝ) : ℝ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
 
 /-- A jitter is a function picking a site in every square in an infinite square grid (mem)
-with all sites sites distinct (injective)
+  with all sites sites distinct (injective)
 
-A typical jitter function would pe a pseudo-random choice that uses half-open intervals
-to guarantee injectivity (see `IsJitterIco.isJitter`)
+  A typical jitter function would pe a pseudo-random choice that uses half-open intervals
+  to guarantee injectivity (see `IsJitterIco.isJitter`)
  -/
 structure IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop where
   mem : ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Icc (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Icc (c.2 : ℝ) (c.2 + 1)
@@ -46,10 +45,13 @@ structure IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop where
 variable {ι : Type*}
 
 /-- Returns the voronoi diagram for a set of sites f filtered to neighborhood N
-    Returns empty set sites outside N.
+  Returns empty set sites outside N.
 
-    ι will be the full square grid ℤ × ℤ, and  N will be the finite neighbourhood.
-    --/
+  In other words `voronoiOn f N` gives a function that maps from squares listed in N to
+  their corresponding Voronoi cell.
+
+  Usuually ι will be the full square grid ℤ × ℤ, and  N will be the finite neighbourhood.
+  --/
 def voronoiOn (f : ι → ℝ × ℝ) (N : Set ι) (x : ι) : Set (ℝ × ℝ) :=
   {p | x ∈ N ∧ ∀ y ∈ N, sqDist p (f x) ≤ sqDist p (f y)}
 
@@ -61,7 +63,7 @@ Now we define what we're looking for
 
 ```lean
 /-- A sufficient neighborhood is one where you always get the same Voronoi
-site for (0, 0) when restricted to the neighborhood or not -/
+cell for (0, 0) regardless of if you restricted to the neighborhood or not -/
 def SufficientNbhd (N : Set (ℤ × ℤ)) : Prop :=
   ∀ f, IsJitter f → voronoiOn f N (0, 0) = voronoi f (0, 0)
 
@@ -95,7 +97,6 @@ Reflections `x ↦ 1 - x`, `y ↦ 1 - y` and `x ↔ y` are symmetries, and are u
 We simply supply seven "witnesses" which are a specific assignment of sites and a point to test, which
 break if you don't include a specific cell in the neighborhood. The finitely many comparisons in the window 
 `|a|, |b| ≤ 5` are checked by `decide +kernel` for all 36 cells; cells farther out are trivially far.
-
 
 These witnesses are mirrored to cover all 36 cells.
 
