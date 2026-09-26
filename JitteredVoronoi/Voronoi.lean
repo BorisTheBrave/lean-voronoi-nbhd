@@ -21,6 +21,61 @@ namespace JitteredVoronoi
 
 /-! ### Sufficiency -/
 
+/-- A test point with a blocker is not in the local Voronoi cell: the blocking cell's site is
+strictly closer than the origin's site. -/
+theorem HasBlocker.not_mem_voronoiOn {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) {p : ℝ × ℝ}
+    (h : HasBlocker p.1 p.2 (f (0, 0)).1 (f (0, 0)).2) : p ∉ voronoiOn f Nbhd (0, 0) := by
+  intro hp
+  obtain ⟨a', b', hN, h0, hB⟩ := h
+  have h1 := hp.2 (a', b') hN
+  have hne : f (a', b') ≠ f (0, 0) := fun e => h0 (hf.injective e)
+  have h2 := hB (f (a', b')).1 (hf.mem (a', b')).1 (f (a', b')).2 (hf.mem (a', b')).2
+    fun e => hne (Prod.ext (congrArg Prod.fst e) (congrArg Prod.snd e))
+  unfold sqDist at h1
+  linarith
+
+/-- **Radius bound.**  A point of the Voronoi cell of the origin's site computed from `Nbhd` is
+within distance `√2` of that site.  In the middle region this is because the point's own square
+is in `Nbhd`; far points are excluded by `far_right`. -/
+theorem sqDist_le_two_of_mem_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) {p : ℝ × ℝ}
+    (hp : p ∈ voronoiOn f Nbhd (0, 0)) : sqDist p (f (0, 0)) ≤ 2 := by
+  have hx0 : 0 ≤ (f (0, 0)).1 ∧ (f (0, 0)).1 ≤ 1 := by simpa using (hf.mem (0, 0)).1
+  have hy0 : 0 ≤ (f (0, 0)).2 ∧ (f (0, 0)).2 ≤ 1 := by simpa using (hf.mem (0, 0)).2
+  -- far test points are not in the local cell at all
+  rcases le_or_gt (5 / 2) p.1 with hu1 | hu1
+  · exact absurd hp (HasBlocker.not_mem_voronoiOn hf (far_right hx0 hy0 hu1))
+  rcases le_or_gt p.1 (-3 / 2) with hu2 | hu2
+  · exact absurd hp (HasBlocker.not_mem_voronoiOn hf
+      (HasBlocker.of_reflectX (far_right (reflect01 hx0) hy0 (by linarith))))
+  rcases le_or_gt (5 / 2) p.2 with hv1 | hv1
+  · exact absurd hp (HasBlocker.not_mem_voronoiOn hf (HasBlocker.of_swap (far_right hy0 hx0 hv1)))
+  rcases le_or_gt p.2 (-3 / 2) with hv2 | hv2
+  · exact absurd hp (HasBlocker.not_mem_voronoiOn hf (HasBlocker.of_swap
+      (HasBlocker.of_reflectX (far_right (reflect01 hy0) hx0 (by linarith)))))
+  -- otherwise the square containing `p` is in `Nbhd`, and its site is within `√2` of `p`
+  set d : ℤ × ℤ := (⌊p.1⌋, ⌊p.2⌋) with hd
+  have f1 := Int.floor_le p.1
+  have f2 := Int.lt_floor_add_one p.1
+  have f3 := Int.floor_le p.2
+  have f4 := Int.lt_floor_add_one p.2
+  have hdN : d ∈ Nbhd := by
+    have a1 : -3 < ⌊p.1⌋ := by exact_mod_cast (show (-3 : ℝ) < ⌊p.1⌋ by linarith)
+    have a2 : ⌊p.1⌋ < 3 := by exact_mod_cast (show (⌊p.1⌋ : ℝ) < 3 by linarith)
+    have b1 : -3 < ⌊p.2⌋ := by exact_mod_cast (show (-3 : ℝ) < ⌊p.2⌋ by linarith)
+    have b2 : ⌊p.2⌋ < 3 := by exact_mod_cast (show (⌊p.2⌋ : ℝ) < 3 by linarith)
+    exact mem_Nbhd_of (by omega) (by omega) (by omega)
+  have h := hp.2 d hdN
+  obtain ⟨⟨h1, h2⟩, ⟨h3, h4⟩⟩ := hf.mem d
+  simp only [hd] at h1 h2 h3 h4
+  have e1 : (p.1 - (f d).1) ^ 2 ≤ 1 := by
+    nlinarith [mul_nonneg (show 0 ≤ 1 - (p.1 - (f d).1) by linarith)
+      (show 0 ≤ 1 + (p.1 - (f d).1) by linarith)]
+  have e2 : (p.2 - (f d).2) ^ 2 ≤ 1 := by
+    nlinarith [mul_nonneg (show 0 ≤ 1 - (p.2 - (f d).2) by linarith)
+      (show 0 ≤ 1 + (p.2 - (f d).2) by linarith)]
+  unfold sqDist at h ⊢
+  linarith
+
 /-- **Sufficiency.**  For every jitter, the Voronoi cell of the origin's point is determined by
 the sites in `Nbhd`. -/
 theorem voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) :
@@ -32,17 +87,12 @@ theorem voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter
   rw [not_le] at hlt
   by_cases hc : c ∈ Nbhd
   · exact absurd (hp.2 c hc) (not_le.2 hlt)
-  · have hx0 : 0 ≤ (f (0, 0)).1 ∧ (f (0, 0)).1 ≤ 1 := by simpa using (hf.mem (0, 0)).1
-    have hy0 : 0 ≤ (f (0, 0)).2 ∧ (f (0, 0)).2 ≤ 1 := by simpa using (hf.mem (0, 0)).2
-    obtain ⟨a', b', hN, h0, hB⟩ :=
-      hasBlocker_of_threat (u := p.1) (v := p.2) hx0 hy0 (a := c.1) (b := c.2) hc
-        (hf.mem c).1 (hf.mem c).2 hlt
-    have h1 := hp.2 (a', b') hN
-    have hne : f (a', b') ≠ f (0, 0) := fun e => h0 (hf.injective e)
-    have h2 := hB (f (a', b')).1 (hf.mem (a', b')).1 (f (a', b')).2 (hf.mem (a', b')).2
-      fun e => hne (Prod.ext (congrArg Prod.fst e) (congrArg Prod.snd e))
-    unfold sqDist at h1
-    linarith
+  have hx0 : 0 ≤ (f (0, 0)).1 ∧ (f (0, 0)).1 ≤ 1 := by simpa using (hf.mem (0, 0)).1
+  have hy0 : 0 ≤ (f (0, 0)).2 ∧ (f (0, 0)).2 ≤ 1 := by simpa using (hf.mem (0, 0)).2
+  have hr := sqDist_le_two_of_mem_voronoiOn_Nbhd hf hp
+  exact HasBlocker.not_mem_voronoiOn hf
+    (hasBlocker_of_threat (u := p.1) (v := p.2) hx0 hy0 hr (a := c.1) (b := c.2) hc
+      (hf.mem c).1 (hf.mem c).2 hlt) hp
 
 /-- Any neighbourhood containing `Nbhd` works. -/
 theorem voronoiOn_eq_voronoi_of_subset {N : Set (ℤ × ℤ)} (hN : Nbhd ⊆ N)

@@ -18,9 +18,12 @@ are irrelevant.
 Closed cells are symmetric under the reflections `x ↦ 1 - x`, `y ↦ 1 - y` and the swap
 `x ↔ y`, which reduce everything to three frontier configurations:
 
-* `far_right`: if `u ≥ 5/2` some cell `(2, b')` blocks — no threat is needed;
-* `coreR0`, `coreR1`: threats from `x ≥ 4` in the rows `0 ≤ y ≤ 1`, `1 ≤ y ≤ 2`;
-* `coreD`: threats from the quadrant `x ≥ 3`, `y ≥ 2`.
+* `far_right`: if `u ≥ 5/2` some cell `(2, b')` blocks — no threat is needed.  This is what
+  bounds the local Voronoi cell (`sqDist_le_two_of_mem_voronoiOn_Nbhd`): a test point of the
+  local cell is within `√2` of the origin's site.
+* `block_three_two`: a threat from the cell `(3, 2)`.  Given the radius bound, only the eight
+  cells `(±3, ±2)`, `(±2, ±3)` can threaten a test point, and the symmetries reduce them to
+  this one cell.
 
 Each case is settled by choosing the blocking cell explicitly, bounding the squared distances
 corner by corner, and finishing with linear arithmetic.
@@ -170,123 +173,17 @@ theorem far_right (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (h
     have h4 : (-1 - v) ^ 2 ≤ (y0 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     nlinarith
 
-/-! ### Frontier threats from the right -/
+/-! ### The cell `(3, 2)` and its mirror images -/
 
-/-- A threat from `x ≥ 4`, `0 ≤ y ≤ 1` (any cell `(a, 0)` with `a ≥ 4`). -/
-theorem coreR0 (hu : u ≤ 5 / 2)
-    (hqx : 4 ≤ qx) (hqy1 : 0 ≤ qy) (hqy2 : qy ≤ 1)
+/-- A threat from the cell `(3, 2)`: a point of `[3, 4] × [2, 3]` strictly closer to `(u, v)`
+than the origin's site.  The blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)` depending on where
+`(u, v)` is. -/
+theorem block_three_two (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
+    (hu : u ≤ 5 / 2) (hv : v ≤ 5 / 2)
+    (hq : qx ∈ Set.Icc (3 : ℝ) 4 ∧ qy ∈ Set.Icc (2 : ℝ) 3)
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
     HasBlocker u v x0 y0 := by
-  have hX : ∀ x ∈ Set.Icc ((2 : ℤ) : ℝ) ((2 : ℤ) + 1), (u - x) ^ 2 ≤ (3 - u) ^ 2 := fun x hx => by
-    obtain ⟨h1, h2⟩ := hx
-    push_cast at h1 h2
-    exact sq_le_sq' (by linarith) (by linarith)
-  have hQ : (4 - u) ^ 2 ≤ (u - qx) ^ 2 := by nlinarith
-  rcases le_or_gt (3 / 2) v with hv | hv
-  · refine HasBlocker.mk 2 1 ?_
-    intro x hx y hy _
-    obtain ⟨h1, h2⟩ := hy
-    push_cast at h1 h2
-    have h3 : (v - y) ^ 2 ≤ (v - 1) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    have h4 : (v - 1) ^ 2 ≤ (v - qy) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    nlinarith [hX x hx]
-  rcases le_or_gt (-1 / 2) v with hv' | hv'
-  · refine HasBlocker.mk 2 0 ?_
-    intro x hx y hy _
-    obtain ⟨h1, h2⟩ := hy
-    push_cast at h1 h2
-    have key : (v - y) ^ 2 - (v - qy) ^ 2 ≤ 2 := by
-      have e : (v - y) ^ 2 - (v - qy) ^ 2 = (qy - y) * (2 * v - y - qy) := by ring
-      rw [e]
-      rcases le_total y qy with h | h
-      · nlinarith [mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h), mul_nonneg (sub_nonneg.2 h) h1,
-          mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 hqy2)]
-      · nlinarith [mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h), mul_nonneg (sub_nonneg.2 h) hqy1,
-          mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h2)]
-    nlinarith [hX x hx]
-  · refine HasBlocker.mk 2 (-1) ?_
-    intro x hx y hy _
-    obtain ⟨h1, h2⟩ := hy
-    push_cast at h1 h2
-    have h3 : (v - y) ^ 2 ≤ (-v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    have h4 : (-v) ^ 2 ≤ (qy - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    nlinarith [hX x hx]
-
-/-- A threat from `x ≥ 4`, `1 ≤ y ≤ 2` (any cell `(a, 1)` with `a ≥ 4`). -/
-theorem coreR1 (hu : u ≤ 5 / 2)
-    (hqx : 4 ≤ qx) (hqy1 : 1 ≤ qy) (hqy2 : qy ≤ 2)
-    (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker u v x0 y0 := by
-  have hX : ∀ x ∈ Set.Icc ((2 : ℤ) : ℝ) ((2 : ℤ) + 1), (u - x) ^ 2 ≤ (3 - u) ^ 2 := fun x hx => by
-    obtain ⟨h1, h2⟩ := hx
-    push_cast at h1 h2
-    exact sq_le_sq' (by linarith) (by linarith)
-  have hQ : (4 - u) ^ 2 ≤ (u - qx) ^ 2 := by nlinarith
-  rcases le_or_gt (5 / 2) v with hv | hv
-  · refine HasBlocker.mk 2 2 ?_
-    intro x hx y hy _
-    obtain ⟨h1, h2⟩ := hy
-    push_cast at h1 h2
-    have h3 : (v - y) ^ 2 ≤ (v - 2) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    have h4 : (v - 2) ^ 2 ≤ (v - qy) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    nlinarith [hX x hx]
-  rcases le_or_gt (1 / 2) v with hv' | hv'
-  · refine HasBlocker.mk 2 1 ?_
-    intro x hx y hy _
-    obtain ⟨h1, h2⟩ := hy
-    push_cast at h1 h2
-    have key : (v - y) ^ 2 - (v - qy) ^ 2 ≤ 2 := by
-      have e : (v - y) ^ 2 - (v - qy) ^ 2 = (qy - y) * (2 * v - y - qy) := by ring
-      rw [e]
-      rcases le_total y qy with h | h
-      · nlinarith [mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h),
-          mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h1),
-          mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 hqy2)]
-      · nlinarith [mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h),
-          mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 hqy1),
-          mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h2)]
-    nlinarith [hX x hx]
-  · refine HasBlocker.mk 2 0 ?_
-    intro x hx y hy _
-    obtain ⟨h1, h2⟩ := hy
-    push_cast at h1 h2
-    have h3 : (v - y) ^ 2 ≤ (1 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    have h4 : (1 - v) ^ 2 ≤ (qy - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    nlinarith [hX x hx]
-
-/-- A threat from `x ≥ 4`, `-1 ≤ y ≤ 2` (any cell `(a, b)` with `a ≥ 4`, `|b| ≤ 1`). -/
-theorem coreR (hu : u ≤ 5 / 2)
-    (hqx : 4 ≤ qx) (hqy1 : -1 ≤ qy) (hqy2 : qy ≤ 2)
-    (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker u v x0 y0 := by
-  rcases le_or_gt 1 qy with h | h
-  · exact coreR1 hu hqx h hqy2 ht
-  rcases le_or_gt 0 qy with h' | h'
-  · exact coreR0 hu hqx h' h.le ht
-  · apply HasBlocker.of_reflectY
-    refine coreR1 hu hqx (qy := 1 - qy) (by linarith) (by linarith) ?_
-    simp only [sq_reflect]
-    exact ht
-
-/-- Threats from the right or from the left, in the rows `|b| ≤ 1`. -/
-theorem coreR_all (hu1 : -3 / 2 ≤ u) (hu2 : u ≤ 5 / 2)
-    (hqx : 4 ≤ qx ∨ qx ≤ -3) (hqy1 : -1 ≤ qy) (hqy2 : qy ≤ 2)
-    (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker u v x0 y0 := by
-  rcases hqx with h | h
-  · exact coreR hu2 h hqy1 hqy2 ht
-  · apply HasBlocker.of_reflectX
-    refine coreR (by linarith) (qx := 1 - qx) (by linarith) hqy1 hqy2 ?_
-    simp only [sq_reflect]
-    exact ht
-
-/-! ### Frontier threats from a diagonal quadrant -/
-
-/-- A threat from the quadrant `x ≥ 3`, `y ≥ 2` (any cell `(a, b)` with `a ≥ 3`, `b ≥ 2`). -/
-theorem coreD (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (hu : u ≤ 5 / 2) (hv : v ≤ 5 / 2)
-    (hqx : 3 ≤ qx) (hqy : 2 ≤ qy)
-    (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker u v x0 y0 := by
+  obtain ⟨⟨hqx, -⟩, ⟨hqy, -⟩⟩ := hq
   have hQx : (3 - u) ^ 2 ≤ (u - qx) ^ 2 := by nlinarith
   rcases le_or_gt v (3 / 2) with hv1 | hv1
   · -- the cell `(2, 1)` dominates
@@ -344,99 +241,99 @@ theorem coreD (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (hu : 
       linarith
     · exact absurd (by rw [heq, heq']) hne
 
-/-- Threats from any of the four diagonal quadrants `|x| ≥ 3`-ish, `|y| ≥ 2`-ish. -/
-theorem coreD_all (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
+/-- A threat from one of the cells `(±3, ±2)`, reduced to `(3, 2)` by the reflections. -/
+theorem block_three_two_all (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     (hu1 : -3 / 2 ≤ u) (hu2 : u ≤ 5 / 2) (hv1 : -3 / 2 ≤ v) (hv2 : v ≤ 5 / 2)
-    (hqx : 3 ≤ qx ∨ qx ≤ -2) (hqy : 2 ≤ qy ∨ qy ≤ -1)
+    {a b : ℤ} (ha : a = 3 ∨ a = -3) (hb : b = 2 ∨ b = -2)
+    (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
     HasBlocker u v x0 y0 := by
-  rcases hqx with hx | hx <;> rcases hqy with hy | hy
-  · exact coreD hx0 hy0 hu2 hv2 hx hy ht
+  obtain ⟨hx1, hx2⟩ := hqx
+  obtain ⟨hy1, hy2⟩ := hqy
+  rcases ha with rfl | rfl <;> rcases hb with rfl | rfl <;> push_cast at hx1 hx2 hy1 hy2
+  · exact block_three_two hx0 hy0 hu2 hv2 ⟨⟨hx1, by linarith⟩, ⟨hy1, by linarith⟩⟩ ht
   · apply HasBlocker.of_reflectY
-    refine coreD hx0 (reflect01 hy0) hu2 (by linarith) hx (qy := 1 - qy) (by linarith) ?_
+    refine block_three_two hx0 (reflect01 hy0) hu2 (by linarith) (qy := 1 - qy)
+      ⟨⟨hx1, by linarith⟩, ⟨by linarith, by linarith⟩⟩ ?_
     simp only [sq_reflect]
     exact ht
   · apply HasBlocker.of_reflectX
-    refine coreD (reflect01 hx0) hy0 (by linarith) hv2 (qx := 1 - qx) (by linarith) hy ?_
+    refine block_three_two (reflect01 hx0) hy0 (by linarith) hv2 (qx := 1 - qx)
+      ⟨⟨by linarith, by linarith⟩, ⟨hy1, by linarith⟩⟩ ?_
     simp only [sq_reflect]
     exact ht
   · apply HasBlocker.of_reflectX
     apply HasBlocker.of_reflectY
-    refine coreD (reflect01 hx0) (reflect01 hy0) (by linarith) (by linarith)
-      (qx := 1 - qx) (by linarith) (qy := 1 - qy) (by linarith) ?_
+    refine block_three_two (reflect01 hx0) (reflect01 hy0) (by linarith) (by linarith)
+      (qx := 1 - qx) (qy := 1 - qy) ⟨⟨by linarith, by linarith⟩, ⟨by linarith, by linarith⟩⟩ ?_
     simp only [sq_reflect]
     exact ht
 
 /-! ### The blocking theorem -/
 
-/-- **Blocking.**  If a cell outside `Nbhd` contains a point strictly closer to `(u, v)` than the
-origin's point `(x0, y0)`, then some non-origin cell of `Nbhd` consists entirely of points
-strictly closer to `(u, v)` than `(x0, y0)`. -/
-theorem hasBlocker_of_threat (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) {a b : ℤ}
+/-- If the threat point is at least `k` cells away in the `x` direction, its squared distance to
+the origin's site in that direction is at least `(k - 1)²`. -/
+theorem sq_le_of_far {a : ℤ} (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hx0 : 0 ≤ x0 ∧ x0 ≤ 1)
+    {k : ℤ} (hk : 1 ≤ k) (h : k ≤ a ∨ a ≤ -k) : ((k : ℝ) - 1) ^ 2 ≤ (qx - x0) ^ 2 := by
+  obtain ⟨h1, h2⟩ := hqx
+  obtain ⟨h3, h4⟩ := hx0
+  have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  rcases h with h | h
+  · have : (k : ℝ) ≤ a := by exact_mod_cast h
+    exact sq_le_sq' (by linarith) (by linarith)
+  · have : (a : ℝ) ≤ -k := by exact_mod_cast h
+    have := sq_le_sq' (a := (k : ℝ) - 1) (b := x0 - qx) (by linarith) (by linarith)
+    nlinarith
+
+/-- **Blocking.**  Suppose the origin's site is within squared distance `2` of `(u, v)` (as it is
+whenever `(u, v)` lies in the local Voronoi cell, `sqDist_le_two_of_mem_voronoiOn_Nbhd`).  If a
+cell other than the origin's and outside `Nbhd` contains a point strictly closer to `(u, v)`
+than the origin's site, then some non-origin cell of `Nbhd` consists entirely of points strictly
+closer to `(u, v)` than the origin's site.
+
+The radius bound confines the threatening cell to the eight cells `(±3, ±2)`, `(±2, ±3)`:
+a point within `√2` of `(u, v)`, which is within `√2` of the origin's site, is within `2√2` of
+the unit square, and only the `7 × 7` block minus its corners comes that close.  Those eight
+cells are the images of `(3, 2)` under the symmetries of the square (`block_three_two_all`). -/
+theorem hasBlocker_of_threat (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
+    (hr : (u - x0) ^ 2 + (v - y0) ^ 2 ≤ 2) {a b : ℤ}
     (hc : (a, b) ∉ Nbhd) (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
     HasBlocker u v x0 y0 := by
-  -- Step 1: far centres are blocked whatever the threat.
-  rcases le_or_gt (5 / 2) u with hu1 | hu1
-  · exact far_right hx0 hy0 hu1
-  rcases le_or_gt u (-3 / 2) with hu2 | hu2
-  · exact HasBlocker.of_reflectX (far_right (reflect01 hx0) hy0 (by linarith))
-  rcases le_or_gt (5 / 2) v with hv1 | hv1
-  · exact HasBlocker.of_swap (far_right hy0 hx0 hv1)
-  rcases le_or_gt v (-3 / 2) with hv2 | hv2
-  · exact HasBlocker.of_swap
-      (HasBlocker.of_reflectX (far_right (reflect01 hy0) hx0 (by linarith)))
-  -- Step 2: the threat comes from one of four frontier regions.
+  -- the test point lies in the box `[-3/2, 5/2]²`
+  have hu1 : -3 / 2 ≤ u := by nlinarith [sq_nonneg (v - y0)]
+  have hu2 : u ≤ 5 / 2 := by nlinarith [sq_nonneg (v - y0)]
+  have hv1 : -3 / 2 ≤ v := by nlinarith [sq_nonneg (u - x0)]
+  have hv2 : v ≤ 5 / 2 := by nlinarith [sq_nonneg (u - x0)]
+  -- the threat point is within `2√2` of the origin's site
+  have h8 : (qx - x0) ^ 2 + (qy - y0) ^ 2 < 8 := by
+    nlinarith [sq_nonneg (qx - u - (u - x0)), sq_nonneg (qy - v - (v - y0))]
+  -- hence the threatening cell is one of the eight diagonal frontier cells
+  have hA : a.natAbs ≤ 3 := by
+    by_contra h
+    have := sq_le_of_far hqx hx0 (k := 4) (by norm_num) (by omega)
+    norm_num at this
+    nlinarith [sq_nonneg (qy - y0)]
+  have hB : b.natAbs ≤ 3 := by
+    by_contra h
+    have := sq_le_of_far hqy hy0 (k := 4) (by norm_num) (by omega)
+    norm_num at this
+    nlinarith [sq_nonneg (qx - x0)]
+  have hcorner : ¬ (a.natAbs = 3 ∧ b.natAbs = 3) := by
+    rintro ⟨ha, hb⟩
+    have := sq_le_of_far hqx hx0 (k := 3) (by norm_num) (by omega)
+    have := sq_le_of_far hqy hy0 (k := 3) (by norm_num) (by omega)
+    norm_num at *
+    linarith
+  have hc' : ¬ (a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4) := hc
   obtain ⟨hqa1, hqa2⟩ := hqx
   obtain ⟨hqb1, hqb2⟩ := hqy
-  have hc' : ¬ (a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4) := hc
   have ht' : (v - qy) ^ 2 + (u - qx) ^ 2 < (v - y0) ^ 2 + (u - x0) ^ 2 := by linarith
-  have cases : (4 ≤ a.natAbs ∧ b.natAbs ≤ 1) ∨ (4 ≤ b.natAbs ∧ a.natAbs ≤ 1) ∨
-      (3 ≤ a.natAbs ∧ 2 ≤ b.natAbs) ∨ (2 ≤ a.natAbs ∧ 3 ≤ b.natAbs) := by omega
-  rcases cases with ⟨ha, hb⟩ | ⟨hb, ha⟩ | ⟨ha, hb⟩ | ⟨ha, hb⟩
-  · -- rows `|b| ≤ 1`, columns `|a| ≥ 4`
-    have hb1 : (-1 : ℝ) ≤ b := by exact_mod_cast (by omega : (-1 : ℤ) ≤ b)
-    have hb2 : (b : ℝ) ≤ 1 := by exact_mod_cast (by omega : b ≤ 1)
-    refine coreR_all hu2.le hu1.le ?_ (by linarith) (by linarith) ht
-    rcases (by omega : 4 ≤ a ∨ a ≤ -4) with h | h
-    · left; have : (4 : ℝ) ≤ a := by exact_mod_cast h
-      linarith
-    · right; have : (a : ℝ) ≤ -4 := by exact_mod_cast h
-      linarith
-  · -- columns `|a| ≤ 1`, rows `|b| ≥ 4`: swap the roles of the axes
-    have ha1 : (-1 : ℝ) ≤ a := by exact_mod_cast (by omega : (-1 : ℤ) ≤ a)
-    have ha2 : (a : ℝ) ≤ 1 := by exact_mod_cast (by omega : a ≤ 1)
-    apply HasBlocker.of_swap
-    refine coreR_all hv2.le hv1.le ?_ (by linarith) (by linarith) ht'
-    rcases (by omega : 4 ≤ b ∨ b ≤ -4) with h | h
-    · left; have : (4 : ℝ) ≤ b := by exact_mod_cast h
-      linarith
-    · right; have : (b : ℝ) ≤ -4 := by exact_mod_cast h
-      linarith
-  · -- `|a| ≥ 3`, `|b| ≥ 2`
-    refine coreD_all hx0 hy0 hu2.le hu1.le hv2.le hv1.le ?_ ?_ ht
-    · rcases (by omega : 3 ≤ a ∨ a ≤ -3) with h | h
-      · left; have : (3 : ℝ) ≤ a := by exact_mod_cast h
-        linarith
-      · right; have : (a : ℝ) ≤ -3 := by exact_mod_cast h
-        linarith
-    · rcases (by omega : 2 ≤ b ∨ b ≤ -2) with h | h
-      · left; have : (2 : ℝ) ≤ b := by exact_mod_cast h
-        linarith
-      · right; have : (b : ℝ) ≤ -2 := by exact_mod_cast h
-        linarith
-  · -- `|a| ≥ 2`, `|b| ≥ 3`: swap the roles of the axes
-    apply HasBlocker.of_swap
-    refine coreD_all hy0 hx0 hv2.le hv1.le hu2.le hu1.le ?_ ?_ ht'
-    · rcases (by omega : 3 ≤ b ∨ b ≤ -3) with h | h
-      · left; have : (3 : ℝ) ≤ b := by exact_mod_cast h
-        linarith
-      · right; have : (b : ℝ) ≤ -3 := by exact_mod_cast h
-        linarith
-    · rcases (by omega : 2 ≤ a ∨ a ≤ -2) with h | h
-      · left; have : (2 : ℝ) ≤ a := by exact_mod_cast h
-        linarith
-      · right; have : (a : ℝ) ≤ -2 := by exact_mod_cast h
-        linarith
+  have cases : ((a = 3 ∨ a = -3) ∧ (b = 2 ∨ b = -2)) ∨ ((a = 2 ∨ a = -2) ∧ (b = 3 ∨ b = -3)) := by
+    omega
+  rcases cases with ⟨ha, hb⟩ | ⟨ha, hb⟩
+  · exact block_three_two_all hx0 hy0 hu1 hu2 hv1 hv2 ha hb ⟨hqa1, hqa2⟩ ⟨hqb1, hqb2⟩ ht
+  · exact HasBlocker.of_swap
+      (block_three_two_all hy0 hx0 hv1 hv2 hu1 hu2 hb ha ⟨hqb1, hqb2⟩ ⟨hqa1, hqa2⟩ ht')
 
 end JitteredVoronoi

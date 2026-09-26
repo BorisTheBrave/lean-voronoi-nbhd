@@ -103,13 +103,16 @@ Say a cell *threatens* `p` if it contains a point strictly closer to `p` than `(
 that if any cell outside `Nbhd` threatens `p`, some non-origin cell of `Nbhd` blocks `p`; so `p`
 is already excluded from the local Voronoi cell.
 
-* If `u ≥ 5/2` (or the mirror images), the column `x ∈ [2, 3]` in the row of `v` blocks,
-  whatever the threat (`far_right`).
-* Otherwise `p` lies in `(-3/2, 5/2)²` and the threatening cell is reduced, by monotonicity, to
-  one of three frontier configurations: a threat from `x ≥ 4` in the rows `0 ≤ y ≤ 1` or
-  `1 ≤ y ≤ 2` (`coreR0`, `coreR1`, blocked by `(2, 1)`, `(2, 0)` or `(2, -1)` depending on
-  `v`), and a threat from the quadrant `x ≥ 3`, `y ≥ 2` (`coreD`, blocked by `(2, 1)`, `(1, 1)`
-  or `(1, 2)`). Each case is a corner-by-corner bound followed by (non)linear arithmetic.
+* *Radius bound* (`sqDist_le_two_of_mem_voronoiOn_Nbhd`): a point `p` of the local Voronoi
+  cell is within distance `√2` of `f(0,0)`. If `p` lies in `(-3/2, 5/2)²`, the square containing
+  `p` is in `Nbhd` and its site is within `√2` of `p`; otherwise the column `x ∈ [2, 3]` in the
+  row of `v` (or a mirror image) is entirely closer than `f(0,0)`, so `p` is not in the local
+  cell at all (`far_right`).
+* *Eight cells* (`hasBlocker_of_threat`): a threatening site is within `√2` of `p`, hence within
+  `2√2` of the unit square, and outside `Nbhd` only the cells `(±3, ±2)`, `(±2, ±3)` come that
+  close. By the symmetries of the square these reduce to the single cell `(3, 2)`
+  (`block_three_two`), where the blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)` depending on
+  where `p` is; each case is a corner-by-corner bound followed by (non)linear arithmetic.
 
 Reflections `x ↦ 1 - x`, `y ↦ 1 - y` and `x ↔ y` are symmetries, and are used to reduce the cases.
 
