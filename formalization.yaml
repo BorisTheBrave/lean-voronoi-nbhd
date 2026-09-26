@@ -1,0 +1,126 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+
+version: "v0.4"
+
+project:
+  name: "lean-voronoi-nbhd: the neighbourhood that determines a cell of a jittered Voronoi diagram"
+  description: >
+    A jittered Voronoi diagram is an infinite Voronoi diagrams where the sites are picked randomly
+    from each square of a unit square grid.
+    This library resolves what finite neighborhood of sites is sufficient fully determine or compute
+    each Voronoi cell.
+    The answer is a 7 × 7 block less the 3 squares at each corner.
+  authors:
+    - "Claude Fable 5.1 (Anthropic Claude Code), directed by Adam Newgas"
+    - "Adam Newgas (problem, design decisions, review, README)"
+  responsible_maintainers:
+    - "Adam Newgas"
+  license: "MIT (LICENSE, Copyright (c) 2026 Adam Newgas)"
+
+repository:
+  role: "substantive-development"
+
+sources:
+  - title: "The neighbourhood that determines a cell of a jittered Voronoi diagram (this library)"
+    authors: ["Adam Newgas", "Claude Fable 5.1"]
+    type: "original-proof"
+    location: "JitteredVoronoi/Voronoi.lean: sufficientNbhd_iff, nbhd_isLeast"
+    relationship: "formalizes"
+    note: >
+      The theorem was found and proved in the course of the formalization: a numerical search
+      first identified the 36 squares (and showed the 5 × 5 folklore answer to be wrong), and the
+      proof was then designed for Lean. No prior written source states the result.
+  - title: >-
+      Folklore: the Voronoi cell of a jittered-grid site is determined by the 5 × 5 block of
+      squares around it
+    type: "folklore"
+    relationship: "other"
+    note: >
+      The belief that motivated the question, common in procedural-graphics discussions of
+      jittered (Worley-style) Voronoi noise. The library shows it is false for the Voronoi cell
+      (three_zero_needed), although a 5 × 5 block does suffice for the nearest site alone.
+
+classification:
+  arxiv: ["math.MG", "cs.CG"]
+  msc2020: ["52C99", "68U05"]
+
+automation:
+  methods:
+    - method: "agent"
+      models: ["claude-fable-5-1"]
+      framework: "Claude Code"
+      tool_setup: >
+        A single interactive Claude Code session with the standard tools (shell, file editing).
+        Numerical exploration (random search for witnesses, a domination-margin scan of the plane)
+        in Python preceded the proof design; the Lean proofs were written by the agent and
+        iterated against `lake build`. Refactorings of the definitions (closed cells with distinct
+        sites instead of an abstract cell convention, `voronoi` as a special case of `voronoiOn`,
+        the witness table as seven decimal representatives plus symmetry) were requested by the
+        human author.
+      cost:
+        wall_time: "11.5 hours, under 10 minutes of API time"
+        spend_usd: "< $18.95"
+      prompting_notes: >
+        Conversational direction in natural language.
+        I originally asked the wrong question, and only realized after trying to fully formalize it.
+        With the right definition, the agent one-shot a proof, I then worked with it to get cleaner code.
+  spend_usd: "$18.95 API credits"
+  notes: >
+    Agent-written Lean under human direction. The mathematics itself (which squares are needed,
+    and why the half-open or distinct-sites convention matters) was worked out during the
+    session, with numerical experiments as a guide.
+
+status:
+  scope: >
+    Complete for the stated question. The library (five modules, about 900 lines) defines
+    jitters, Voronoi cells relative to a set of sites, and the neighbourhood, and proves the
+    characterization of sufficient neighbourhoods together with its two halves and the two
+    concrete consequences ((3, 0) is needed, (3, 2) is not). Equivalence with the genuine
+    Euclidean distance on EuclideanSpace ℝ (Fin 2) is proved (voronoiDist_eq). Every
+    declaration depends only on propext, Classical.choice and Quot.sound; no `sorry`, no
+    `native_decide` (the finite checks use `decide +kernel`).
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: ["propext", "Classical.choice", "Quot.sound"]
+  main_results:
+    - declaration: "JitteredVoronoi.nbhd_isLeast"
+      file: "JitteredVoronoi/Voronoi.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      note: >
+        Nbhd is the least sufficient neighbourhood: it is sufficient, and every sufficient
+        neighbourhood contains it (IsLeast for the subset order).
+      literature_dependencies: []
+    - declaration: "JitteredVoronoi.voronoiDist_eq"
+      file: "JitteredVoronoi/Basic.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      note: >
+        The Voronoi cells defined with the genuine Euclidean distance on EuclideanSpace ℝ (Fin 2)
+        coincide with those defined with the squared distance, so the main result is a statement
+        about the standard Euclidean Voronoi diagram.
+      literature_dependencies: []
+
+
+fidelity:
+  divergences: >
+    Modelling choices, not departures from a source. (1) A jitter places its sites in the closed
+    squares [a, a+1] × [b, b+1] and is required to be injective; the usual half-open model
+    (IsJitterIco) is a special case (IsJitterIco.isJitter). With closed squares and coincident
+    sites allowed the statement is false, and the distinct-sites hypothesis is used exactly once
+    in the proof. (2) Voronoi cells are defined with the squared Euclidean distance and with
+    non-strict comparison (ties belong to the cell); voronoiDist_eq shows the genuine Euclidean
+    distance gives the same cells. (3) voronoiOn f N x is empty when x ∉ N, so that a
+    neighbourhood omitting the origin square is never sufficient; this is what makes the answer
+    "Nbhd ⊆ N" rather than "Nbhd minus the origin ⊆ N".
+
+alignment:
+  statements:
+    - source: "folklore (5 × 5 block suffices) — refuted"
+      lean: "JitteredVoronoi.three_zero_needed"
+      module: "JitteredVoronoi/Voronoi.lean"
+      status: "proved"
+
+acknowledgements: >
+  Built on Mathlib (v4.33.0 tag, Lean 4.33.0). The figures in the README are generated by
+  scripts/diagrams.py.
