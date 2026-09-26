@@ -1,21 +1,22 @@
-import JitteredVoronoi.Cell
+import Mathlib
 import JitteredVoronoi.Nbhd
 
 /-!
 # Blocking: cells outside the neighbourhood never cut the origin's Voronoi cell
 
-Fix the origin's point `(x0, y0)` (in cell `(0, 0)`) and a test point `p = (u, v)`.  A cell
-`(a, b)` *threatens* `p` if it contains a point strictly closer to `p` than `(x0, y0)` is; a cell
-`(a', b')` *blocks* `p` if *every* point of it is strictly closer to `p` than `(x0, y0)` is.
+Fix the origin's point `(x0, y0)` (in the closed cell `[0, 1]²`) and a test point `p = (u, v)`.
+A cell `(a, b)` *threatens* `p` if it contains a point strictly closer to `p` than `(x0, y0)`
+is; a cell `(a', b')` *blocks* `p` if *every* point of it other than `(x0, y0)` itself is
+strictly closer to `p` than `(x0, y0)` is.  Cells are closed squares throughout; the exception
+for the point `(x0, y0)` is what a jitter's distinct sites provide.
 
 The main result of this file, `hasBlocker_of_threat`, says: if a cell outside `Nbhd` threatens
 `p`, then some non-origin cell of `Nbhd` blocks `p`.  Consequently, for any jitter, `p` is not in
 the Voronoi cell of the origin's point computed from `Nbhd` alone, so the cells outside `Nbhd`
 are irrelevant.
 
-The proof works with abstract cell conventions (`CellStructure`) so that the reflections
-`x ↦ 1 - x`, `y ↦ 1 - y` and the swap `x ↔ y` can be used to reduce to three frontier
-configurations:
+Closed cells are symmetric under the reflections `x ↦ 1 - x`, `y ↦ 1 - y` and the swap
+`x ↔ y`, which reduce everything to three frontier configurations:
 
 * `far_right`: if `u ≥ 5/2` some cell `(2, b')` blocks — no threat is needed;
 * `coreR0`, `coreR1`: threats from `x ≥ 4` in the rows `0 ≤ y ≤ 1`, `1 ≤ y ≤ 2`;
@@ -27,60 +28,76 @@ corner by corner, and finishing with linear arithmetic.
 
 namespace JitteredVoronoi
 
-open CellStructure
-
-variable (Cx Cy : CellStructure)
-
-/-- Every point of cell `(a', b')` is strictly closer to `(u, v)` than `(x0, y0)` is. -/
+/-- Every point of the closed cell `(a', b')` other than `(x0, y0)` is strictly closer to
+`(u, v)` than `(x0, y0)` is. -/
 def Blocked (u v x0 y0 : ℝ) (a' b' : ℤ) : Prop :=
-  ∀ x ∈ Cx.I a', ∀ y ∈ Cy.I b', (u - x) ^ 2 + (v - y) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2
+  ∀ x ∈ Set.Icc (a' : ℝ) (a' + 1), ∀ y ∈ Set.Icc (b' : ℝ) (b' + 1), (x, y) ≠ (x0, y0) →
+    (u - x) ^ 2 + (v - y) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2
 
 /-- Some non-origin cell of `Nbhd` blocks `(u, v)`. -/
 def HasBlocker (u v x0 y0 : ℝ) : Prop :=
-  ∃ a' b' : ℤ, (a', b') ∈ Nbhd ∧ (a', b') ≠ (0, 0) ∧ Blocked Cx Cy u v x0 y0 a' b'
+  ∃ a' b' : ℤ, (a', b') ∈ Nbhd ∧ (a', b') ≠ (0, 0) ∧ Blocked u v x0 y0 a' b'
 
-variable {Cx Cy}
 variable {u v x0 y0 qx qy : ℝ}
 
-theorem HasBlocker.mk (a' b' : ℤ) (h : Blocked Cx Cy u v x0 y0 a' b')
+theorem HasBlocker.mk (a' b' : ℤ) (h : Blocked u v x0 y0 a' b')
     (hN : a'.natAbs ≤ 3 ∧ b'.natAbs ≤ 3 ∧ a'.natAbs + b'.natAbs ≤ 4 := by decide)
-    (h0 : (a', b') ≠ (0, 0) := by decide) : HasBlocker Cx Cy u v x0 y0 :=
+    (h0 : (a', b') ≠ (0, 0) := by decide) : HasBlocker u v x0 y0 :=
   ⟨a', b', hN, h0, h⟩
+
+/-- The reflection `x ↦ 1 - x` sends the cell `a` to the cell `-a`. -/
+theorem mem_reflect {a : ℤ} {x : ℝ} (hx : x ∈ Set.Icc (a : ℝ) (a + 1)) :
+    1 - x ∈ Set.Icc ((-a : ℤ) : ℝ) ((-a : ℤ) + 1) := by
+  obtain ⟨h1, h2⟩ := hx
+  push_cast
+  constructor <;> linarith
+
+theorem reflect01 {x : ℝ} (hx : 0 ≤ x ∧ x ≤ 1) : 0 ≤ 1 - x ∧ 1 - x ≤ 1 :=
+  ⟨by linarith [hx.2], by linarith [hx.1]⟩
 
 /-! ### Symmetries -/
 
 theorem sq_reflect (s t : ℝ) : ((1 - s) - (1 - t)) ^ 2 = (s - t) ^ 2 := by ring
 
-theorem Blocked.of_reflectX {a' b' : ℤ}
-    (h : Blocked Cx.reflect Cy (1 - u) v (1 - x0) y0 a' b') :
-    Blocked Cx Cy u v x0 y0 (-a') b' := by
-  intro x hx y hy
-  have hx' : 1 - x ∈ Cx.reflect.I a' := by
-    have := Cx.mem_reflect_of_mem hx
-    rwa [neg_neg] at this
-  have := h (1 - x) hx' y hy
+theorem Blocked.of_reflectX {a' b' : ℤ} (h : Blocked (1 - u) v (1 - x0) y0 a' b') :
+    Blocked u v x0 y0 (-a') b' := by
+  intro x hx y hy hne
+  have hx' := mem_reflect hx
+  rw [neg_neg] at hx'
+  have hne' : (1 - x, y) ≠ (1 - x0, y0) := by
+    intro e
+    apply hne
+    simp only [Prod.mk.injEq] at e ⊢
+    exact ⟨by linarith [e.1], e.2⟩
+  have := h (1 - x) hx' y hy hne'
   simp only [sq_reflect] at this
   exact this
 
-theorem Blocked.of_reflectY {a' b' : ℤ}
-    (h : Blocked Cx Cy.reflect u (1 - v) x0 (1 - y0) a' b') :
-    Blocked Cx Cy u v x0 y0 a' (-b') := by
-  intro x hx y hy
-  have hy' : 1 - y ∈ Cy.reflect.I b' := by
-    have := Cy.mem_reflect_of_mem hy
-    rwa [neg_neg] at this
-  have := h x hx (1 - y) hy'
+theorem Blocked.of_reflectY {a' b' : ℤ} (h : Blocked u (1 - v) x0 (1 - y0) a' b') :
+    Blocked u v x0 y0 a' (-b') := by
+  intro x hx y hy hne
+  have hy' := mem_reflect hy
+  rw [neg_neg] at hy'
+  have hne' : (x, 1 - y) ≠ (x0, 1 - y0) := by
+    intro e
+    apply hne
+    simp only [Prod.mk.injEq] at e ⊢
+    exact ⟨e.1, by linarith [e.2]⟩
+  have := h x hx (1 - y) hy' hne'
   simp only [sq_reflect] at this
   exact this
 
-theorem Blocked.of_swap {a' b' : ℤ} (h : Blocked Cy Cx v u y0 x0 b' a') :
-    Blocked Cx Cy u v x0 y0 a' b' := by
-  intro x hx y hy
-  have := h y hy x hx
+theorem Blocked.of_swap {a' b' : ℤ} (h : Blocked v u y0 x0 b' a') : Blocked u v x0 y0 a' b' := by
+  intro x hx y hy hne
+  have hne' : (y, x) ≠ (y0, x0) := by
+    intro e
+    apply hne
+    simp only [Prod.mk.injEq] at e ⊢
+    exact ⟨e.2, e.1⟩
+  have := h y hy x hx hne'
   linarith
 
-theorem HasBlocker.of_reflectX (h : HasBlocker Cx.reflect Cy (1 - u) v (1 - x0) y0) :
-    HasBlocker Cx Cy u v x0 y0 := by
+theorem HasBlocker.of_reflectX (h : HasBlocker (1 - u) v (1 - x0) y0) : HasBlocker u v x0 y0 := by
   obtain ⟨a', b', hN, h0, hB⟩ := h
   refine ⟨-a', b', mem_Nbhd_neg_fst.2 hN, ?_, hB.of_reflectX⟩
   intro e
@@ -88,8 +105,7 @@ theorem HasBlocker.of_reflectX (h : HasBlocker Cx.reflect Cy (1 - u) v (1 - x0) 
   simp only [Prod.mk.injEq] at e ⊢
   omega
 
-theorem HasBlocker.of_reflectY (h : HasBlocker Cx Cy.reflect u (1 - v) x0 (1 - y0)) :
-    HasBlocker Cx Cy u v x0 y0 := by
+theorem HasBlocker.of_reflectY (h : HasBlocker u (1 - v) x0 (1 - y0)) : HasBlocker u v x0 y0 := by
   obtain ⟨a', b', hN, h0, hB⟩ := h
   refine ⟨a', -b', mem_Nbhd_neg_snd.2 hN, ?_, hB.of_reflectY⟩
   intro e
@@ -97,7 +113,7 @@ theorem HasBlocker.of_reflectY (h : HasBlocker Cx Cy.reflect u (1 - v) x0 (1 - y
   simp only [Prod.mk.injEq] at e ⊢
   omega
 
-theorem HasBlocker.of_swap (h : HasBlocker Cy Cx v u y0 x0) : HasBlocker Cx Cy u v x0 y0 := by
+theorem HasBlocker.of_swap (h : HasBlocker v u y0 x0) : HasBlocker u v x0 y0 := by
   obtain ⟨a', b', hN, h0, hB⟩ := h
   refine ⟨b', a', mem_Nbhd_swap.2 hN, ?_, hB.of_swap⟩
   intro e
@@ -105,39 +121,31 @@ theorem HasBlocker.of_swap (h : HasBlocker Cy Cx v u y0 x0) : HasBlocker Cx Cy u
   simp only [Prod.mk.injEq] at e ⊢
   exact ⟨e.2, e.1⟩
 
-/-! ### Bounds for the origin cell -/
-
-theorem CellStructure.bounds0 (C : CellStructure) {x : ℝ} (hx : x ∈ C.I 0) : 0 ≤ x ∧ x ≤ 1 := by
-  have := C.le_of_mem 0 x hx
-  push_cast at this
-  simpa using this
-
 /-! ### Far centres: `u ≥ 5/2` -/
 
 /-- If the test point is far to the right, the column `x ∈ [2, 3]` blocks it whatever the
 threat. -/
-theorem far_right (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0) (hu : 5 / 2 ≤ u) :
-    HasBlocker Cx Cy u v x0 y0 := by
-  obtain ⟨hx01, hx02⟩ := Cx.bounds0 hx0
-  obtain ⟨hy01, hy02⟩ := Cy.bounds0 hy0
+theorem far_right (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (hu : 5 / 2 ≤ u) :
+    HasBlocker u v x0 y0 := by
+  obtain ⟨hx01, hx02⟩ := hx0
+  obtain ⟨hy01, hy02⟩ := hy0
   -- strict slack in the `x` direction for every point of column `2`
-  have hcol : ∀ x ∈ Cx.I 2, (u - x) ^ 2 + 1 < (u - x0) ^ 2 := by
+  have hcol : ∀ x ∈ Set.Icc ((2 : ℤ) : ℝ) ((2 : ℤ) + 1), (u - x) ^ 2 + 1 < (u - x0) ^ 2 := by
     intro x hx
-    obtain ⟨h1, h2⟩ := Cx.le_of_mem 2 x hx
-    have h3 := Cx.sep 0 2 (by norm_num) x0 hx0 x hx
-    push_cast at h1 h2 h3
-    nlinarith [mul_pos (show 0 < x - x0 - 1 by linarith) (show 0 < 2 * u - x - x0 by linarith)]
+    obtain ⟨h1, h2⟩ := hx
+    push_cast at h1 h2
+    nlinarith [mul_nonneg (show 0 ≤ x - x0 - 1 by linarith) (show 0 ≤ 2 * u - x - x0 - 1 by linarith)]
   -- the row containing `v` blocks
-  have row : ∀ b' : ℤ, (b' : ℝ) ≤ v → v ≤ b' + 1 → Blocked Cx Cy u v x0 y0 2 b' := by
-    intro b' hv1 hv2 x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem b' y hy
+  have row : ∀ b' : ℤ, (b' : ℝ) ≤ v → v ≤ b' + 1 → Blocked u v x0 y0 2 b' := by
+    intro b' hv1 hv2 x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     have h3 : (v - y) ^ 2 ≤ 1 := by nlinarith
     have := hcol x hx
     nlinarith [sq_nonneg (v - y0)]
   rcases le_or_gt 3 v with hv | hv
   · refine HasBlocker.mk 2 2 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem 2 y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have := hcol x hx
     have h3 : (v - y) ^ 2 ≤ (v - 2) ^ 2 := sq_le_sq' (by linarith) (by linarith)
@@ -154,8 +162,8 @@ theorem far_right (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0) (hu : 5 / 2 ≤ u)
   rcases le_or_gt (-2) v with hv6 | hv6
   · exact HasBlocker.mk 2 (-2) (row (-2) (by push_cast; linarith) (by push_cast; linarith))
   · refine HasBlocker.mk 2 (-2) ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem (-2) y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have := hcol x hx
     have h3 : (v - y) ^ 2 ≤ (-1 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
@@ -168,24 +176,24 @@ theorem far_right (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0) (hu : 5 / 2 ≤ u)
 theorem coreR0 (hu : u ≤ 5 / 2)
     (hqx : 4 ≤ qx) (hqy1 : 0 ≤ qy) (hqy2 : qy ≤ 1)
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker Cx Cy u v x0 y0 := by
-  have hX : ∀ x ∈ Cx.I 2, (u - x) ^ 2 ≤ (3 - u) ^ 2 := fun x hx => by
-    obtain ⟨h1, h2⟩ := Cx.le_of_mem 2 x hx
+    HasBlocker u v x0 y0 := by
+  have hX : ∀ x ∈ Set.Icc ((2 : ℤ) : ℝ) ((2 : ℤ) + 1), (u - x) ^ 2 ≤ (3 - u) ^ 2 := fun x hx => by
+    obtain ⟨h1, h2⟩ := hx
     push_cast at h1 h2
     exact sq_le_sq' (by linarith) (by linarith)
   have hQ : (4 - u) ^ 2 ≤ (u - qx) ^ 2 := by nlinarith
   rcases le_or_gt (3 / 2) v with hv | hv
   · refine HasBlocker.mk 2 1 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem 1 y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have h3 : (v - y) ^ 2 ≤ (v - 1) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     have h4 : (v - 1) ^ 2 ≤ (v - qy) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     nlinarith [hX x hx]
   rcases le_or_gt (-1 / 2) v with hv' | hv'
   · refine HasBlocker.mk 2 0 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem 0 y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have key : (v - y) ^ 2 - (v - qy) ^ 2 ≤ 2 := by
       have e : (v - y) ^ 2 - (v - qy) ^ 2 = (qy - y) * (2 * v - y - qy) := by ring
@@ -197,8 +205,8 @@ theorem coreR0 (hu : u ≤ 5 / 2)
           mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h2)]
     nlinarith [hX x hx]
   · refine HasBlocker.mk 2 (-1) ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem (-1) y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have h3 : (v - y) ^ 2 ≤ (-v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     have h4 : (-v) ^ 2 ≤ (qy - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
@@ -208,24 +216,24 @@ theorem coreR0 (hu : u ≤ 5 / 2)
 theorem coreR1 (hu : u ≤ 5 / 2)
     (hqx : 4 ≤ qx) (hqy1 : 1 ≤ qy) (hqy2 : qy ≤ 2)
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker Cx Cy u v x0 y0 := by
-  have hX : ∀ x ∈ Cx.I 2, (u - x) ^ 2 ≤ (3 - u) ^ 2 := fun x hx => by
-    obtain ⟨h1, h2⟩ := Cx.le_of_mem 2 x hx
+    HasBlocker u v x0 y0 := by
+  have hX : ∀ x ∈ Set.Icc ((2 : ℤ) : ℝ) ((2 : ℤ) + 1), (u - x) ^ 2 ≤ (3 - u) ^ 2 := fun x hx => by
+    obtain ⟨h1, h2⟩ := hx
     push_cast at h1 h2
     exact sq_le_sq' (by linarith) (by linarith)
   have hQ : (4 - u) ^ 2 ≤ (u - qx) ^ 2 := by nlinarith
   rcases le_or_gt (5 / 2) v with hv | hv
   · refine HasBlocker.mk 2 2 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem 2 y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have h3 : (v - y) ^ 2 ≤ (v - 2) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     have h4 : (v - 2) ^ 2 ≤ (v - qy) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     nlinarith [hX x hx]
   rcases le_or_gt (1 / 2) v with hv' | hv'
   · refine HasBlocker.mk 2 1 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem 1 y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have key : (v - y) ^ 2 - (v - qy) ^ 2 ≤ 2 := by
       have e : (v - y) ^ 2 - (v - qy) ^ 2 = (qy - y) * (2 * v - y - qy) := by ring
@@ -239,8 +247,8 @@ theorem coreR1 (hu : u ≤ 5 / 2)
           mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 h2)]
     nlinarith [hX x hx]
   · refine HasBlocker.mk 2 0 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cy.le_of_mem 0 y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hy
     push_cast at h1 h2
     have h3 : (v - y) ^ 2 ≤ (1 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     have h4 : (1 - v) ^ 2 ≤ (qy - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
@@ -250,13 +258,13 @@ theorem coreR1 (hu : u ≤ 5 / 2)
 theorem coreR (hu : u ≤ 5 / 2)
     (hqx : 4 ≤ qx) (hqy1 : -1 ≤ qy) (hqy2 : qy ≤ 2)
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker Cx Cy u v x0 y0 := by
+    HasBlocker u v x0 y0 := by
   rcases le_or_gt 1 qy with h | h
   · exact coreR1 hu hqx h hqy2 ht
   rcases le_or_gt 0 qy with h' | h'
   · exact coreR0 hu hqx h' h.le ht
   · apply HasBlocker.of_reflectY
-    refine coreR1 (Cy := Cy.reflect) hu hqx (qy := 1 - qy) (by linarith) (by linarith) ?_
+    refine coreR1 hu hqx (qy := 1 - qy) (by linarith) (by linarith) ?_
     simp only [sq_reflect]
     exact ht
 
@@ -264,28 +272,28 @@ theorem coreR (hu : u ≤ 5 / 2)
 theorem coreR_all (hu1 : -3 / 2 ≤ u) (hu2 : u ≤ 5 / 2)
     (hqx : 4 ≤ qx ∨ qx ≤ -3) (hqy1 : -1 ≤ qy) (hqy2 : qy ≤ 2)
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker Cx Cy u v x0 y0 := by
+    HasBlocker u v x0 y0 := by
   rcases hqx with h | h
   · exact coreR hu2 h hqy1 hqy2 ht
   · apply HasBlocker.of_reflectX
-    refine coreR (Cx := Cx.reflect) (by linarith) (qx := 1 - qx) (by linarith) hqy1 hqy2 ?_
+    refine coreR (by linarith) (qx := 1 - qx) (by linarith) hqy1 hqy2 ?_
     simp only [sq_reflect]
     exact ht
 
 /-! ### Frontier threats from a diagonal quadrant -/
 
 /-- A threat from the quadrant `x ≥ 3`, `y ≥ 2` (any cell `(a, b)` with `a ≥ 3`, `b ≥ 2`). -/
-theorem coreD (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0) (hu : u ≤ 5 / 2) (hv : v ≤ 5 / 2)
+theorem coreD (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (hu : u ≤ 5 / 2) (hv : v ≤ 5 / 2)
     (hqx : 3 ≤ qx) (hqy : 2 ≤ qy)
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker Cx Cy u v x0 y0 := by
+    HasBlocker u v x0 y0 := by
   have hQx : (3 - u) ^ 2 ≤ (u - qx) ^ 2 := by nlinarith
   rcases le_or_gt v (3 / 2) with hv1 | hv1
   · -- the cell `(2, 1)` dominates
     refine HasBlocker.mk 2 1 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cx.le_of_mem 2 x hx
-    obtain ⟨h3, h4⟩ := Cy.le_of_mem 1 y hy
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hx
+    obtain ⟨h3, h4⟩ := hy
     push_cast at h1 h2 h3 h4
     have hX : (u - x) ^ 2 ≤ (3 - u) ^ 2 := sq_le_sq' (by linarith) (by linarith)
     have hY : (v - y) ^ 2 ≤ (2 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
@@ -295,9 +303,9 @@ theorem coreD (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0) (hu : u ≤ 5 / 2) (hv
   · rcases le_or_gt v 2 with hv2 | hv2
     · -- the cell `(1, 1)` dominates
       refine HasBlocker.mk 1 1 ?_
-      intro x hx y hy
-      obtain ⟨h1, h2⟩ := Cx.le_of_mem 1 x hx
-      obtain ⟨h3, h4⟩ := Cy.le_of_mem 1 y hy
+      intro x hx y hy _
+      obtain ⟨h1, h2⟩ := hx
+      obtain ⟨h3, h4⟩ := hy
       push_cast at h1 h2 h3 h4
       have hX : (u - x) ^ 2 ≤ (2 - u) ^ 2 := sq_le_sq' (by linarith) (by linarith)
       have hY : (v - y) ^ 2 ≤ (v - 1) ^ 2 := sq_le_sq' (by linarith) (by linarith)
@@ -305,46 +313,56 @@ theorem coreD (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0) (hu : u ≤ 5 / 2) (hv
       nlinarith
     · -- the cell `(1, 2)` dominates
       refine HasBlocker.mk 1 2 ?_
-      intro x hx y hy
-      obtain ⟨h1, h2⟩ := Cx.le_of_mem 1 x hx
-      obtain ⟨h3, h4⟩ := Cy.le_of_mem 2 y hy
+      intro x hx y hy _
+      obtain ⟨h1, h2⟩ := hx
+      obtain ⟨h3, h4⟩ := hy
       push_cast at h1 h2 h3 h4
       have hX : (u - x) ^ 2 ≤ (2 - u) ^ 2 := sq_le_sq' (by linarith) (by linarith)
       have hY : (v - y) ^ 2 ≤ (3 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
       have hY1 : (3 - v) ^ 2 ≤ 1 := by nlinarith
       nlinarith [sq_nonneg (v - qy)]
-  · -- `u > 3/2`, `v > 3/2`: the cell `(1, 1)` is closer than the origin's point can ever be
+  · -- `u > 3/2`, `v > 3/2`: every point of the cell `(1, 1)` other than the origin's site is
+    -- closer than the origin's site, whatever the threat
     refine HasBlocker.mk 1 1 ?_
-    intro x hx y hy
-    obtain ⟨h1, h2⟩ := Cx.le_of_mem 1 x hx
-    obtain ⟨h3, h4⟩ := Cy.le_of_mem 1 y hy
+    intro x hx y hy hne
+    obtain ⟨h1, h2⟩ := hx
+    obtain ⟨h3, h4⟩ := hy
     push_cast at h1 h2 h3 h4
-    have hx' := Cx.lt_of_mem (by norm_num : (0 : ℤ) < 1) hx0 hx
-    have hy' := Cy.lt_of_mem (by norm_num : (0 : ℤ) < 1) hy0 hy
-    obtain ⟨hx01, hx02⟩ := Cx.bounds0 hx0
-    obtain ⟨hy01, hy02⟩ := Cy.bounds0 hy0
-    nlinarith [mul_pos (sub_pos.2 hx') (show 0 < 2 * u - x - x0 by linarith),
-      mul_nonneg (sub_pos.2 hy').le (show 0 ≤ 2 * v - y - y0 by linarith)]
+    obtain ⟨hx01, hx02⟩ := hx0
+    obtain ⟨hy01, hy02⟩ := hy0
+    have hX : (u - x) ^ 2 ≤ (u - x0) ^ 2 := by
+      nlinarith [mul_nonneg (show 0 ≤ x - x0 by linarith) (show 0 ≤ 2 * u - x - x0 by linarith)]
+    have hY : (v - y) ^ 2 ≤ (v - y0) ^ 2 := by
+      nlinarith [mul_nonneg (show 0 ≤ y - y0 by linarith) (show 0 ≤ 2 * v - y - y0 by linarith)]
+    rcases lt_or_eq_of_le (show x0 ≤ x by linarith) with hlt | heq
+    · have : (u - x) ^ 2 < (u - x0) ^ 2 := by
+        nlinarith [mul_pos (sub_pos.2 hlt) (show 0 < 2 * u - x - x0 by linarith)]
+      linarith
+    rcases lt_or_eq_of_le (show y0 ≤ y by linarith) with hlt' | heq'
+    · have : (v - y) ^ 2 < (v - y0) ^ 2 := by
+        nlinarith [mul_pos (sub_pos.2 hlt') (show 0 < 2 * v - y - y0 by linarith)]
+      linarith
+    · exact absurd (by rw [heq, heq']) hne
 
 /-- Threats from any of the four diagonal quadrants `|x| ≥ 3`-ish, `|y| ≥ 2`-ish. -/
-theorem coreD_all (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0)
+theorem coreD_all (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     (hu1 : -3 / 2 ≤ u) (hu2 : u ≤ 5 / 2) (hv1 : -3 / 2 ≤ v) (hv2 : v ≤ 5 / 2)
     (hqx : 3 ≤ qx ∨ qx ≤ -2) (hqy : 2 ≤ qy ∨ qy ≤ -1)
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker Cx Cy u v x0 y0 := by
+    HasBlocker u v x0 y0 := by
   rcases hqx with hx | hx <;> rcases hqy with hy | hy
   · exact coreD hx0 hy0 hu2 hv2 hx hy ht
   · apply HasBlocker.of_reflectY
-    refine coreD hx0 (Cy.mem_reflect_zero hy0) hu2 (by linarith) hx (qy := 1 - qy) (by linarith) ?_
+    refine coreD hx0 (reflect01 hy0) hu2 (by linarith) hx (qy := 1 - qy) (by linarith) ?_
     simp only [sq_reflect]
     exact ht
   · apply HasBlocker.of_reflectX
-    refine coreD (Cx.mem_reflect_zero hx0) hy0 (by linarith) hv2 (qx := 1 - qx) (by linarith) hy ?_
+    refine coreD (reflect01 hx0) hy0 (by linarith) hv2 (qx := 1 - qx) (by linarith) hy ?_
     simp only [sq_reflect]
     exact ht
   · apply HasBlocker.of_reflectX
     apply HasBlocker.of_reflectY
-    refine coreD (Cx.mem_reflect_zero hx0) (Cy.mem_reflect_zero hy0) (by linarith) (by linarith)
+    refine coreD (reflect01 hx0) (reflect01 hy0) (by linarith) (by linarith)
       (qx := 1 - qx) (by linarith) (qy := 1 - qy) (by linarith) ?_
     simp only [sq_reflect]
     exact ht
@@ -354,23 +372,23 @@ theorem coreD_all (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0)
 /-- **Blocking.**  If a cell outside `Nbhd` contains a point strictly closer to `(u, v)` than the
 origin's point `(x0, y0)`, then some non-origin cell of `Nbhd` consists entirely of points
 strictly closer to `(u, v)` than `(x0, y0)`. -/
-theorem hasBlocker_of_threat (hx0 : x0 ∈ Cx.I 0) (hy0 : y0 ∈ Cy.I 0) {a b : ℤ}
-    (hc : (a, b) ∉ Nbhd) (hqx : qx ∈ Cx.I a) (hqy : qy ∈ Cy.I b)
+theorem hasBlocker_of_threat (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) {a b : ℤ}
+    (hc : (a, b) ∉ Nbhd) (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker Cx Cy u v x0 y0 := by
+    HasBlocker u v x0 y0 := by
   -- Step 1: far centres are blocked whatever the threat.
   rcases le_or_gt (5 / 2) u with hu1 | hu1
   · exact far_right hx0 hy0 hu1
   rcases le_or_gt u (-3 / 2) with hu2 | hu2
-  · exact HasBlocker.of_reflectX (far_right (Cx.mem_reflect_zero hx0) hy0 (by linarith))
+  · exact HasBlocker.of_reflectX (far_right (reflect01 hx0) hy0 (by linarith))
   rcases le_or_gt (5 / 2) v with hv1 | hv1
   · exact HasBlocker.of_swap (far_right hy0 hx0 hv1)
   rcases le_or_gt v (-3 / 2) with hv2 | hv2
   · exact HasBlocker.of_swap
-      (HasBlocker.of_reflectX (far_right (Cy.mem_reflect_zero hy0) hx0 (by linarith)))
+      (HasBlocker.of_reflectX (far_right (reflect01 hy0) hx0 (by linarith)))
   -- Step 2: the threat comes from one of four frontier regions.
-  obtain ⟨hqa1, hqa2⟩ := Cx.le_of_mem a qx hqx
-  obtain ⟨hqb1, hqb2⟩ := Cy.le_of_mem b qy hqy
+  obtain ⟨hqa1, hqa2⟩ := hqx
+  obtain ⟨hqb1, hqb2⟩ := hqy
   have hc' : ¬ (a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4) := hc
   have ht' : (v - qy) ^ 2 + (u - qx) ^ 2 < (v - y0) ^ 2 + (u - x0) ^ 2 := by linarith
   have cases : (4 ≤ a.natAbs ∧ b.natAbs ≤ 1) ∨ (4 ≤ b.natAbs ∧ a.natAbs ≤ 1) ∨

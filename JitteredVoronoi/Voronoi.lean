@@ -32,13 +32,15 @@ theorem voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter
   rw [not_le] at hlt
   by_cases hc : c ∈ Nbhd
   · exact absurd (hp.2 c hc) (not_le.2 hlt)
-  · have hx0 : (f (0, 0)).1 ∈ CellStructure.ico.I 0 := (hf (0, 0)).1
-    have hy0 : (f (0, 0)).2 ∈ CellStructure.ico.I 0 := (hf (0, 0)).2
-    obtain ⟨a', b', hN, -, hB⟩ :=
-      hasBlocker_of_threat (Cx := CellStructure.ico) (Cy := CellStructure.ico) (u := p.1) (v := p.2)
-        hx0 hy0 (a := c.1) (b := c.2) hc (hf c).1 (hf c).2 hlt
+  · have hx0 : 0 ≤ (f (0, 0)).1 ∧ (f (0, 0)).1 ≤ 1 := by simpa using (hf.mem (0, 0)).1
+    have hy0 : 0 ≤ (f (0, 0)).2 ∧ (f (0, 0)).2 ≤ 1 := by simpa using (hf.mem (0, 0)).2
+    obtain ⟨a', b', hN, h0, hB⟩ :=
+      hasBlocker_of_threat (u := p.1) (v := p.2) hx0 hy0 (a := c.1) (b := c.2) hc
+        (hf.mem c).1 (hf.mem c).2 hlt
     have h1 := hp.2 (a', b') hN
-    have h2 := hB (f (a', b')).1 (hf (a', b')).1 (f (a', b')).2 (hf (a', b')).2
+    have hne : f (a', b') ≠ f (0, 0) := fun e => h0 (hf.injective e)
+    have h2 := hB (f (a', b')).1 (hf.mem (a', b')).1 (f (a', b')).2 (hf.mem (a', b')).2
+      fun e => hne (Prod.ext (congrArg Prod.fst e) (congrArg Prod.snd e))
     unfold sqDist at h1
     linarith
 
@@ -116,8 +118,8 @@ empty while the true one contains the origin's site. -/
 theorem origin_mem_of_sufficientNbhd {N : Set (ℤ × ℤ)} (h : SufficientNbhd N) : (0, 0) ∈ N := by
   by_contra h0
   -- any jitter will do, e.g. the one placing every site at the corner of its cell
-  have hf : IsJitter fun c : ℤ × ℤ => ((c.1 : ℝ), (c.2 : ℝ)) := fun c =>
-    ⟨⟨le_refl _, by linarith⟩, ⟨le_refl _, by linarith⟩⟩
+  have hf : IsJitter fun c : ℤ × ℤ => ((c.1 : ℝ), (c.2 : ℝ)) :=
+    IsJitterIco.isJitter fun c => ⟨⟨le_refl _, by linarith⟩, ⟨le_refl _, by linarith⟩⟩
   have := voronoi_nonempty (fun c : ℤ × ℤ => ((c.1 : ℝ), (c.2 : ℝ))) (0, 0)
   rw [← h _ hf, voronoiOn_eq_empty _ h0] at this
   exact Set.not_nonempty_empty this

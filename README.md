@@ -33,9 +33,15 @@ We define Voronoi cells in terms of points that are closed by squared euclidian 
 /-- Squared Euclidean distance on `ℝ × ℝ`. -/
 def sqDist (p q : ℝ × ℝ) : ℝ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
 
-/-- A jitter is a function picking a site in every square in an infite square grid  -/
-def IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop :=
-  ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Ico (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Ico (c.2 : ℝ) (c.2 + 1)
+/-- A jitter is a function picking a site in every square in an infinite square grid (mem)
+with all sites sites distinct (injective)
+
+A typical jitter function would pe a pseudo-random choice that uses half-open intervals
+to guarantee injectivity (see `IsJitterIco.isJitter`)
+ -/
+structure IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop where
+  mem : ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Icc (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Icc (c.2 : ℝ) (c.2 + 1)
+  injective : Function.Injective f
 
 variable {ι : Type*}
 
@@ -83,12 +89,7 @@ is already excluded from the local Voronoi cell.
   `v`), and a threat from the quadrant `x ≥ 3`, `y ≥ 2` (`coreD`, blocked by `(2, 1)`, `(1, 1)`
   or `(1, 2)`). Each case is a corner-by-corner bound followed by (non)linear arithmetic.
 
-To use the reflections `x ↦ 1 - x`, `y ↦ 1 - y` and the swap `x ↔ y` legitimately despite the
-half-open cells, the proof is carried out for an abstract cell convention (`CellStructure` in
-`Cell.lean`): a family of sets `I a ⊆ [a, a+1]` with `x' - x > a' - a - 1` for `x ∈ I a`,
-`x' ∈ I a'`, `a < a'`. Both half-open conventions satisfy this, and the axioms are stable under
-reflection. The half-openness is essential — with closed cells the statement is false — and it
-enters exactly through this separation axiom.
+Reflections `x ↦ 1 - x`, `y ↦ 1 - y` and `x ↔ y` are symmetries, and are used to reduce the cases.
 
 *Necessity* (`Witness.lean`).
 We simply supply seven "witnesses" which are a specific assignment of sites and a point to test, which

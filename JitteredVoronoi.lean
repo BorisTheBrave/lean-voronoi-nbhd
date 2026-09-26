@@ -1,5 +1,4 @@
 import JitteredVoronoi.Basic
-import JitteredVoronoi.Cell
 import JitteredVoronoi.Nbhd
 import JitteredVoronoi.Blocking
 import JitteredVoronoi.Witness

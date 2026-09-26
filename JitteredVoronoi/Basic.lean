@@ -24,9 +24,28 @@ lemma sqQ_eq_sqDist (p q : ℚ × ℚ) : sqQ p q = sqDist (p.1, p.2) (q.1, q.2) 
   unfold sqDist sqQ
   simp
 
-/-- `f` is a jitter: the site of cell `c` lies in side the square cell `[c.1, c.1 + 1) × [c.2, c.2 + 1)`. -/
-def IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop :=
+/-- `f` is a jitter: the site of cell `c` lies in the closed square cell
+`[c.1, c.1 + 1] × [c.2, c.2 + 1]`, and distinct cells get distinct sites. -/
+structure IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop where
+  mem : ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Icc (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Icc (c.2 : ℝ) (c.2 + 1)
+  injective : Function.Injective f
+
+/-- The usual half-open model: one site in each cell `[c.1, c.1 + 1) × [c.2, c.2 + 1)`. -/
+def IsJitterIco (f : ℤ × ℤ → ℝ × ℝ) : Prop :=
   ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Ico (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Ico (c.2 : ℝ) (c.2 + 1)
+
+/-- A half-open jitter is a jitter: the half-open cells are disjoint, so its sites are distinct. -/
+theorem IsJitterIco.isJitter {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitterIco f) : IsJitter f where
+  mem c := ⟨Set.Ico_subset_Icc_self (hf c).1, Set.Ico_subset_Icc_self (hf c).2⟩
+  injective c d e := by
+    obtain ⟨⟨h1, h2⟩, ⟨h3, h4⟩⟩ := hf c
+    obtain ⟨⟨h5, h6⟩, ⟨h7, h8⟩⟩ := hf d
+    rw [e] at h1 h2 h3 h4
+    have e1 : c.1 < d.1 + 1 := by exact_mod_cast (show (c.1 : ℝ) < d.1 + 1 by linarith)
+    have e2 : d.1 < c.1 + 1 := by exact_mod_cast (show (d.1 : ℝ) < c.1 + 1 by linarith)
+    have e3 : c.2 < d.2 + 1 := by exact_mod_cast (show (c.2 : ℝ) < d.2 + 1 by linarith)
+    have e4 : d.2 < c.2 + 1 := by exact_mod_cast (show (d.2 : ℝ) < c.2 + 1 by linarith)
+    exact Prod.ext (by omega) (by omega)
 
 section Voronoi
 

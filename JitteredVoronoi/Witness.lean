@@ -140,8 +140,8 @@ def wit (c : ℤ × ℤ) (d : ℤ × ℤ) : ℝ × ℝ :=
   else if d = c then (data c).siteR
   else ((far (data c).test.1 d.1 : ℝ), (far (data c).test.2 d.2 : ℝ))
 
-/-- The witnessing jitter is a jitter. -/
-theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (wit c) := by
+/-- The witnessing jitter is a half-open jitter. -/
+theorem wit_isJitterIco {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitterIco (wit c) := by
   intro d
   obtain ⟨⟨h1, h2, h3, h4⟩, ⟨h5, h6, h7, h8⟩, -⟩ := data_check c hc
   unfold wit
@@ -157,6 +157,9 @@ theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (wit c) :
     have hx := far_mem (data c).test.1 d.1
     have hy := far_mem (data c).test.2 d.2
     exact ⟨⟨by exact_mod_cast hx.1, by exact_mod_cast hx.2⟩, ⟨by exact_mod_cast hy.1, by exact_mod_cast hy.2⟩⟩
+
+theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (wit c) :=
+  (wit_isJitterIco hc).isJitter
 
 /-- The test point, as a real point. -/
 abbrev testR (c : ℤ × ℤ) : ℝ × ℝ := (data c).testR
