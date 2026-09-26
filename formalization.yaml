@@ -68,6 +68,17 @@ sources:
       determines its Voronoi cell whenever every square holds at least one seed. The library
       refutes this (three_zero_needed): the argument shows the cell stays inside the 5 × 5
       block, but a site outside the block can still cut into it.
+  - title: "Explicit Topology Optimization of Conforming Voronoi Foams"
+    authors: ["Ming Li", "Jingqiao Hu", "Wei Chen", "Weipeng Kong", "Jin Huang"]
+    id: "arXiv:2308.04001 (2023); doi:10.1109/TVCG.2024.3375012 (IEEE TVCG, 2024)"
+    type: "article"
+    location: >-
+      Section on efficient evaluation: "the 2-ring criteria of Voronoi diagram tells that only seed
+      points in a 2-ring around x0 influence the density on x0 [9]"
+    relationship: "other"
+    note: >
+      Reuses the 2-ring claim of Martínez–Dumas–Lefebvre 2016 (their reference [9]) as an
+      established fact; refuted by the same witness (three_zero_needed).
   - title: >-
       Folklore: the Voronoi cell of a jittered-grid site is determined by the 5 × 5 block of
       squares around it

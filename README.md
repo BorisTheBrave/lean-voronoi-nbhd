@@ -37,6 +37,9 @@ Note: This is *not* the neighborhood you'd use for any pixel shader approaches, 
   "the Voronoi cell of a seed cannot be influenced beyond a 2-ring of neighbors", i.e. that the `5 × 5` block suffices.
   The witnesses in this repo, for example the one for the cell `(3, 0)`, show that this is false: their argument
   proves that the cell stays inside the `5 × 5` block, but a site outside the block can still cut into it.
+* Li, Hu, Chen, Kong and Huang, [*Explicit Topology Optimization of Conforming Voronoi Foams*](https://arxiv.org/abs/2308.04001)
+  (2023; IEEE TVCG 2024), reuse the claim as an established fact ("the 2-ring criteria of Voronoi diagram tells that only
+  seed points in a 2-ring around x₀ influence the density on x₀", citing the paper above) to evaluate their foams locally.
 * The general bound for Delone sets, that the Voronoi cell is determined by the sites within twice the covering radius
   (Senechal, *Quasicrystals and Geometry*, 1995, Corollary 5.2), gives the full `7 × 7` block here.
 
