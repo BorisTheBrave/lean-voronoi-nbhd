@@ -5,6 +5,8 @@ A [jittered voronoi diagram](https://www.boristhebrave.com/docs/sylves/1/article
 Define a **jitter** as a collection of distinct points (called **sites**), with exactly one placed in each square of a unit square grid `[a, a+1) × [b, b+1)`, `(a, b) ∈ ℤ²`. The **Voronoi cell** of a site is the set of points of the plane at least as close to it
 as to every other site. The full jittered Voronoi diagram is the collection of Voronoi cells.
 
+![](images/voronoi.svg)
+
 A jitter contains an infinite number of points, but only a finite set of of them are relevant to the calculation of a given Voronoi cell. This is useful in practise for efficient computation of the cells, as it means classic algorithms that work with a finite amount of sites may be re-used.
 
 So the question is, what is the smallest neighborhood you need to use to guarantee that the finite case will result in the same cell as the infinite case. Without loss of generality, we consider the origin square only.
@@ -22,6 +24,8 @@ The answer is a `7 × 7` block around the origin with the three cells at each co
 ```
 
 This repo contains lean code that *proves* it.
+
+Note: This is *not* the neighborhood you'd use for any pixel shader approaches, like [Worley noise](https://en.wikipedia.org/wiki/Worley_noise). Those only require evaluating the nearest 21 sites to the current pixel.
 
 ## Statement
 
@@ -99,6 +103,14 @@ break if you don't include a specific cell in the neighborhood. The finitely man
 `|a|, |b| ≤ 5` are checked by `decide +kernel` for all 36 cells; cells farther out are trivially far.
 
 These witnesses are mirrored to cover all 36 cells.
+
+Here's a diagram for the `(3, 1)` witness. Sites have been selected such that:
+* The closest site to `p` is the `(3,1)` site
+* The second closest site to `p` is the `(0,0)` site
+
+The green polygon shows the Voronoi cell for the `(0, 0)` site computed with/without including the `(3,1)` site, it's clearly different in each case.
+
+![Witness for the cell (3, 1)](images/witness_3_1.svg)
 
 ## Building
 
