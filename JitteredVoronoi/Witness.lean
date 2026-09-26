@@ -70,10 +70,6 @@ def base : ℤ × ℤ → Data
   | _ => ⟨(0, 0), (0, 0), (0, 0), (0, 0)⟩
 
 
-/-- The representative `(max |a| |b|, min |a| |b|)` of the cell `(a, b)` under the symmetries of
-the square. -/
-def rep (c : ℤ × ℤ) : ℤ × ℤ := (max c.1.natAbs c.2.natAbs, min c.1.natAbs c.2.natAbs)
-
 /-- The symmetry of the plane taking the cell `rep c` to the cell `c`: swap the coordinates if
 `|a| < |b|`, then reflect `x ↦ 1 - x` if `a < 0` and `y ↦ 1 - y` if `b < 0`. -/
 def transform (c : ℤ × ℤ) (pt : ℚ × ℚ) : ℚ × ℚ :=
@@ -82,7 +78,7 @@ def transform (c : ℤ × ℤ) (pt : ℚ × ℚ) : ℚ × ℚ :=
 
 /-- The witness data of an arbitrary cell, by symmetry from its representative. -/
 def data (c : ℤ × ℤ) : Data :=
-  let d := base (rep c)
+  let d := base (max c.1.natAbs c.2.natAbs, min c.1.natAbs c.2.natAbs)
   ⟨c, transform c d.origin, transform c d.test, transform c d.site⟩
 
 /-- The integers `-5, …, 5`. -/

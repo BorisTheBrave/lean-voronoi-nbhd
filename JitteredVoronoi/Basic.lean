@@ -34,18 +34,15 @@ structure IsJitter (f : ℤ × ℤ → ℝ × ℝ) : Prop where
 def IsJitterIco (f : ℤ × ℤ → ℝ × ℝ) : Prop :=
   ∀ c : ℤ × ℤ, (f c).1 ∈ Set.Ico (c.1 : ℝ) (c.1 + 1) ∧ (f c).2 ∈ Set.Ico (c.2 : ℝ) (c.2 + 1)
 
-/-- A half-open jitter is a jitter: the half-open cells are disjoint, so its sites are distinct. -/
+/-- A half-open jitter has an inverse by taking floors. -/
+theorem IsJitterIco.floor_eq {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitterIco f) (c : ℤ × ℤ) :
+    (⌊(f c).1⌋, ⌊(f c).2⌋) = c :=
+  Prod.ext (Int.floor_eq_iff.2 (hf c).1) (Int.floor_eq_iff.2 (hf c).2)
+
+/-- A half-open jitter is a jitter -/
 theorem IsJitterIco.isJitter {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitterIco f) : IsJitter f where
   mem c := ⟨Set.Ico_subset_Icc_self (hf c).1, Set.Ico_subset_Icc_self (hf c).2⟩
-  injective c d e := by
-    obtain ⟨⟨h1, h2⟩, ⟨h3, h4⟩⟩ := hf c
-    obtain ⟨⟨h5, h6⟩, ⟨h7, h8⟩⟩ := hf d
-    rw [e] at h1 h2 h3 h4
-    have e1 : c.1 < d.1 + 1 := by exact_mod_cast (show (c.1 : ℝ) < d.1 + 1 by linarith)
-    have e2 : d.1 < c.1 + 1 := by exact_mod_cast (show (d.1 : ℝ) < c.1 + 1 by linarith)
-    have e3 : c.2 < d.2 + 1 := by exact_mod_cast (show (c.2 : ℝ) < d.2 + 1 by linarith)
-    have e4 : d.2 < c.2 + 1 := by exact_mod_cast (show (d.2 : ℝ) < c.2 + 1 by linarith)
-    exact Prod.ext (by omega) (by omega)
+  injective := Function.LeftInverse.injective (g := fun p : ℝ × ℝ => (⌊p.1⌋, ⌊p.2⌋)) hf.floor_eq
 
 section Voronoi
 
