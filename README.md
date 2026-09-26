@@ -27,6 +27,19 @@ This repo contains lean code that *proves* it.
 
 Note: This is *not* the neighborhood you'd use for any pixel shader approaches, like [Worley noise](https://en.wikipedia.org/wiki/Worley_noise). Those only require evaluating the nearest 21 sites to the current pixel.
 
+## Prior claims
+
+* Lauritsen, Puhl and Tillemans, [*Performance of Random Lattice Algorithms*](https://arxiv.org/abs/cond-mat/9305003) (1993),
+  state the same 36-cell neighbourhood ("Each point only can be connected to points in the 36-cell neighbourhood") and the
+  matching bound √20 on the distance between connected sites, but give no proof.
+* Martínez, Dumas and Lefebvre, [*Procedural Voronoi Foams for Additive Manufacturing*](https://hal.univ-lorraine.fr/hal-01393741v1),
+  ACM Transactions on Graphics 35(4), SIGGRAPH 2016, claim (Figure 4) that with at least one seed per grid cell
+  "the Voronoi cell of a seed cannot be influenced beyond a 2-ring of neighbors", i.e. that the `5 × 5` block suffices.
+  The witnesses in this repo, for example the one for the cell `(3, 0)`, show that this is false: their argument
+  proves that the cell stays inside the `5 × 5` block, but a site outside the block can still cut into it.
+* The general bound for Delone sets, that the Voronoi cell is determined by the sites within twice the covering radius
+  (Senechal, *Quasicrystals and Geometry*, 1995, Corollary 5.2), gives the full `7 × 7` block here.
+
 ## Statement
 
 We define Voronoi cells in terms of points that are closed by squared euclidian distance. 
