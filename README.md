@@ -97,24 +97,24 @@ theorem nbhd_isLeast : IsLeast {N | SufficientNbhd N} Nbhd
 
 ## Proof
 
-*Sufficiency* (`Blocking.lean`). Fix the origin's site `(x₀, y₀)` and a test point `p = (u, v)`.
-Say a cell *threatens* `p` if it contains a point strictly closer to `p` than `(x₀, y₀)`, and
-*blocks* `p` if all its points are strictly closer. The key lemma `hasBlocker_of_threat` says
-that if any cell outside `Nbhd` threatens `p`, some non-origin cell of `Nbhd` blocks `p`; so `p`
-is already excluded from the local Voronoi cell.
+*Sufficiency* (`Blocking.lean`, `Mirror.lean`). Fix the origin's site `(x₀, y₀)` and a test
+point `p = (u, v)` of the local Voronoi cell. Say a cell *threatens* `p` if it contains a point
+strictly closer to `p` than `(x₀, y₀)`, and *blocks* `p` if all its points (other than
+`(x₀, y₀)`) are strictly closer; a blocking cell in `Nbhd` contradicts membership in the local
+cell.
 
-* *Radius bound* (`sqDist_le_two_of_mem_voronoiOn_Nbhd`): a point `p` of the local Voronoi
-  cell is within distance `√2` of `f(0,0)`. If `p` lies in `(-3/2, 5/2)²`, the square containing
-  `p` is in `Nbhd` and its site is within `√2` of `p`; otherwise the column `x ∈ [2, 3]` in the
-  row of `v` (or a mirror image) is entirely closer than `f(0,0)`, so `p` is not in the local
-  cell at all (`far_right`).
-* *Eight cells* (`hasBlocker_of_threat`): a threatening site is within `√2` of `p`, hence within
-  `2√2` of the unit square, and outside `Nbhd` only the cells `(±3, ±2)`, `(±2, ±3)` come that
-  close. By the symmetries of the square these reduce to the single cell `(3, 2)`
-  (`block_three_two`), where the blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)` depending on
-  where `p` is; each case is a corner-by-corner bound followed by (non)linear arithmetic.
-
-Reflections `x ↦ 1 - x`, `y ↦ 1 - y` and `x ↔ y` are symmetries, and are used to reduce the cases.
+* *Symmetry* (`Mirror.lean`): reflecting the jitter in `x = 1/2` or `y = 1/2` (the mirror
+  `m x = 1 - x`) or swapping the axes gives another jitter and carries the local cell along, so
+  three `wlog`s put `p` in the octant `1/2 ≤ v ≤ u`.
+* *Radius bound*: if `u ≥ 5/2` the column `x ∈ [2, 3]` in the row of `v` blocks (`far_right`),
+  so `p` is not in the local cell; otherwise the square containing `p` is in `Nbhd` and its site
+  is within `√2` of `p`, hence `|p − (x₀, y₀)| ≤ √2`.
+* *Two cells* (`threat_cases`): a threatening site is within `√2` of `p`, hence within `2√2` of
+  the unit square, and in the quadrant `u, v ≥ 1/2` the only cells outside `Nbhd` that come
+  that close are `(3, 2)` and `(2, 3)` (the latter is the former with the axes swapped).
+* *The cell `(3, 2)`* (`block_three_two`): the blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)`
+  depending on where `p` is; each case is a corner-by-corner bound followed by (non)linear
+  arithmetic, and one region needs the sites to be distinct.
 
 *Necessity* (`Witness.lean`).
 We simply supply seven "witnesses" which are a specific assignment of sites and a point to test, which

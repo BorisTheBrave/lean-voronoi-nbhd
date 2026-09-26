@@ -10,20 +10,16 @@ is; a cell `(a', b')` *blocks* `p` if *every* point of it other than `(x0, y0)` 
 strictly closer to `p` than `(x0, y0)` is.  Cells are closed squares throughout; the exception
 for the point `(x0, y0)` is what a jitter's distinct sites provide.
 
-The main result of this file, `hasBlocker_of_threat`, says: if a cell outside `Nbhd` threatens
-`p`, then some non-origin cell of `Nbhd` blocks `p`.  Consequently, for any jitter, `p` is not in
-the Voronoi cell of the origin's point computed from `Nbhd` alone, so the cells outside `Nbhd`
-are irrelevant.
+The symmetries of the square (`Mirror.lean`) let the main proof assume that the test point lies
+in the octant `1/2 ≤ v ≤ u`, so this file only treats that region:
 
-Closed cells are symmetric under the reflections `x ↦ 1 - x`, `y ↦ 1 - y` and the swap
-`x ↔ y`, which reduce everything to three frontier configurations:
-
-* `far_right`: if `u ≥ 5/2` some cell `(2, b')` blocks — no threat is needed.  This is what
-  bounds the local Voronoi cell (`sqDist_le_two_of_mem_voronoiOn_Nbhd`): a test point of the
-  local cell is within `√2` of the origin's site.
-* `block_three_two`: a threat from the cell `(3, 2)`.  Given the radius bound, only the eight
-  cells `(±3, ±2)`, `(±2, ±3)` can threaten a test point, and the symmetries reduce them to
-  this one cell.
+* `far_right`: if `u ≥ 5/2` the cell `(2, b')` in the row of `v` blocks — no threat is needed.
+  This is what bounds the local Voronoi cell: a test point of the local cell is within `√2` of
+  the origin's site (`sqDist_le_two_of_mem_voronoiOn_Nbhd`).
+* `threat_cases`: given that radius bound, a cell outside `Nbhd` can threaten only if it is
+  `(3, 2)` or `(2, 3)`.
+* `block_three_two`: a threat from the cell `(3, 2)` is blocked by `(2, 1)`, `(1, 1)` or
+  `(1, 2)`, depending on where the test point is; `(2, 3)` is the same with the axes swapped.
 
 Each case is settled by choosing the blocking cell explicitly, bounding the squared distances
 corner by corner, and finishing with linear arithmetic.
@@ -48,88 +44,12 @@ theorem HasBlocker.mk (a' b' : ℤ) (h : Blocked u v x0 y0 a' b')
     (h0 : (a', b') ≠ (0, 0) := by decide) : HasBlocker u v x0 y0 :=
   ⟨a', b', hN, h0, h⟩
 
-/-- The reflection `x ↦ 1 - x` sends the cell `a` to the cell `-a`. -/
-theorem mem_reflect {a : ℤ} {x : ℝ} (hx : x ∈ Set.Icc (a : ℝ) (a + 1)) :
-    1 - x ∈ Set.Icc ((-a : ℤ) : ℝ) ((-a : ℤ) + 1) := by
-  obtain ⟨h1, h2⟩ := hx
-  push_cast
-  constructor <;> linarith
-
-theorem reflect01 {x : ℝ} (hx : 0 ≤ x ∧ x ≤ 1) : 0 ≤ 1 - x ∧ 1 - x ≤ 1 :=
-  ⟨by linarith [hx.2], by linarith [hx.1]⟩
-
-/-! ### Symmetries -/
-
-theorem sq_reflect (s t : ℝ) : ((1 - s) - (1 - t)) ^ 2 = (s - t) ^ 2 := by ring
-
-theorem Blocked.of_reflectX {a' b' : ℤ} (h : Blocked (1 - u) v (1 - x0) y0 a' b') :
-    Blocked u v x0 y0 (-a') b' := by
-  intro x hx y hy hne
-  have hx' := mem_reflect hx
-  rw [neg_neg] at hx'
-  have hne' : (1 - x, y) ≠ (1 - x0, y0) := by
-    intro e
-    apply hne
-    simp only [Prod.mk.injEq] at e ⊢
-    exact ⟨by linarith [e.1], e.2⟩
-  have := h (1 - x) hx' y hy hne'
-  simp only [sq_reflect] at this
-  exact this
-
-theorem Blocked.of_reflectY {a' b' : ℤ} (h : Blocked u (1 - v) x0 (1 - y0) a' b') :
-    Blocked u v x0 y0 a' (-b') := by
-  intro x hx y hy hne
-  have hy' := mem_reflect hy
-  rw [neg_neg] at hy'
-  have hne' : (x, 1 - y) ≠ (x0, 1 - y0) := by
-    intro e
-    apply hne
-    simp only [Prod.mk.injEq] at e ⊢
-    exact ⟨e.1, by linarith [e.2]⟩
-  have := h x hx (1 - y) hy' hne'
-  simp only [sq_reflect] at this
-  exact this
-
-theorem Blocked.of_swap {a' b' : ℤ} (h : Blocked v u y0 x0 b' a') : Blocked u v x0 y0 a' b' := by
-  intro x hx y hy hne
-  have hne' : (y, x) ≠ (y0, x0) := by
-    intro e
-    apply hne
-    simp only [Prod.mk.injEq] at e ⊢
-    exact ⟨e.2, e.1⟩
-  have := h y hy x hx hne'
-  linarith
-
-theorem HasBlocker.of_reflectX (h : HasBlocker (1 - u) v (1 - x0) y0) : HasBlocker u v x0 y0 := by
-  obtain ⟨a', b', hN, h0, hB⟩ := h
-  refine ⟨-a', b', mem_Nbhd_neg_fst.2 hN, ?_, hB.of_reflectX⟩
-  intro e
-  apply h0
-  simp only [Prod.mk.injEq] at e ⊢
-  omega
-
-theorem HasBlocker.of_reflectY (h : HasBlocker u (1 - v) x0 (1 - y0)) : HasBlocker u v x0 y0 := by
-  obtain ⟨a', b', hN, h0, hB⟩ := h
-  refine ⟨a', -b', mem_Nbhd_neg_snd.2 hN, ?_, hB.of_reflectY⟩
-  intro e
-  apply h0
-  simp only [Prod.mk.injEq] at e ⊢
-  omega
-
-theorem HasBlocker.of_swap (h : HasBlocker v u y0 x0) : HasBlocker u v x0 y0 := by
-  obtain ⟨a', b', hN, h0, hB⟩ := h
-  refine ⟨b', a', mem_Nbhd_swap.2 hN, ?_, hB.of_swap⟩
-  intro e
-  apply h0
-  simp only [Prod.mk.injEq] at e ⊢
-  exact ⟨e.2, e.1⟩
-
 /-! ### Far centres: `u ≥ 5/2` -/
 
 /-- If the test point is far to the right, the column `x ∈ [2, 3]` blocks it whatever the
 threat. -/
-theorem far_right (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (hu : 5 / 2 ≤ u) :
-    HasBlocker u v x0 y0 := by
+theorem far_right (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (hu : 5 / 2 ≤ u)
+    (hv : 1 / 2 ≤ v) : HasBlocker u v x0 y0 := by
   obtain ⟨hx01, hx02⟩ := hx0
   obtain ⟨hy01, hy02⟩ := hy0
   -- strict slack in the `x` direction for every point of column `2`
@@ -145,7 +65,7 @@ theorem far_right (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (h
     have h3 : (v - y) ^ 2 ≤ 1 := by nlinarith
     have := hcol x hx
     nlinarith [sq_nonneg (v - y0)]
-  rcases le_or_gt 3 v with hv | hv
+  rcases le_or_gt 3 v with hv3 | hv3
   · refine HasBlocker.mk 2 2 ?_
     intro x hx y hy _
     obtain ⟨h1, h2⟩ := hy
@@ -156,24 +76,11 @@ theorem far_right (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (h
     linarith
   rcases le_or_gt 2 v with hv2 | hv2
   · exact HasBlocker.mk 2 2 (row 2 (by push_cast; linarith) (by push_cast; linarith))
-  rcases le_or_gt 1 v with hv3 | hv3
+  rcases le_or_gt 1 v with hv1 | hv1
   · exact HasBlocker.mk 2 1 (row 1 (by push_cast; linarith) (by push_cast; linarith))
-  rcases le_or_gt 0 v with hv4 | hv4
   · exact HasBlocker.mk 2 0 (row 0 (by push_cast; linarith) (by push_cast; linarith))
-  rcases le_or_gt (-1) v with hv5 | hv5
-  · exact HasBlocker.mk 2 (-1) (row (-1) (by push_cast; linarith) (by push_cast; linarith))
-  rcases le_or_gt (-2) v with hv6 | hv6
-  · exact HasBlocker.mk 2 (-2) (row (-2) (by push_cast; linarith) (by push_cast; linarith))
-  · refine HasBlocker.mk 2 (-2) ?_
-    intro x hx y hy _
-    obtain ⟨h1, h2⟩ := hy
-    push_cast at h1 h2
-    have := hcol x hx
-    have h3 : (v - y) ^ 2 ≤ (-1 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    have h4 : (-1 - v) ^ 2 ≤ (y0 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-    nlinarith
 
-/-! ### The cell `(3, 2)` and its mirror images -/
+/-! ### The cell `(3, 2)` -/
 
 /-- A threat from the cell `(3, 2)`: a point of `[3, 4] × [2, 3]` strictly closer to `(u, v)`
 than the origin's site.  The blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)` depending on where
@@ -241,35 +148,7 @@ theorem block_three_two (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤
       linarith
     · exact absurd (by rw [heq, heq']) hne
 
-/-- A threat from one of the cells `(±3, ±2)`, reduced to `(3, 2)` by the reflections. -/
-theorem block_three_two_all (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
-    (hu1 : -3 / 2 ≤ u) (hu2 : u ≤ 5 / 2) (hv1 : -3 / 2 ≤ v) (hv2 : v ≤ 5 / 2)
-    {a b : ℤ} (ha : a = 3 ∨ a = -3) (hb : b = 2 ∨ b = -2)
-    (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
-    (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker u v x0 y0 := by
-  obtain ⟨hx1, hx2⟩ := hqx
-  obtain ⟨hy1, hy2⟩ := hqy
-  rcases ha with rfl | rfl <;> rcases hb with rfl | rfl <;> push_cast at hx1 hx2 hy1 hy2
-  · exact block_three_two hx0 hy0 hu2 hv2 ⟨⟨hx1, by linarith⟩, ⟨hy1, by linarith⟩⟩ ht
-  · apply HasBlocker.of_reflectY
-    refine block_three_two hx0 (reflect01 hy0) hu2 (by linarith) (qy := 1 - qy)
-      ⟨⟨hx1, by linarith⟩, ⟨by linarith, by linarith⟩⟩ ?_
-    simp only [sq_reflect]
-    exact ht
-  · apply HasBlocker.of_reflectX
-    refine block_three_two (reflect01 hx0) hy0 (by linarith) hv2 (qx := 1 - qx)
-      ⟨⟨by linarith, by linarith⟩, ⟨hy1, by linarith⟩⟩ ?_
-    simp only [sq_reflect]
-    exact ht
-  · apply HasBlocker.of_reflectX
-    apply HasBlocker.of_reflectY
-    refine block_three_two (reflect01 hx0) (reflect01 hy0) (by linarith) (by linarith)
-      (qx := 1 - qx) (qy := 1 - qy) ⟨⟨by linarith, by linarith⟩, ⟨by linarith, by linarith⟩⟩ ?_
-    simp only [sq_reflect]
-    exact ht
-
-/-! ### The blocking theorem -/
+/-! ### Which cells can threaten -/
 
 /-- If the threat point is at least `k` cells away in the `x` direction, its squared distance to
 the origin's site in that direction is at least `(k - 1)²`. -/
@@ -285,30 +164,22 @@ theorem sq_le_of_far {a : ℤ} (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hx0 : 0
     have := sq_le_sq' (a := (k : ℝ) - 1) (b := x0 - qx) (by linarith) (by linarith)
     nlinarith
 
-/-- **Blocking.**  Suppose the origin's site is within squared distance `2` of `(u, v)` (as it is
-whenever `(u, v)` lies in the local Voronoi cell, `sqDist_le_two_of_mem_voronoiOn_Nbhd`).  If a
-cell other than the origin's and outside `Nbhd` contains a point strictly closer to `(u, v)`
-than the origin's site, then some non-origin cell of `Nbhd` consists entirely of points strictly
-closer to `(u, v)` than the origin's site.
+/-- **Only two cells can threaten.**  Suppose the test point lies in the quadrant
+`u, v ≥ 1/2` and within squared distance `2` of the origin's site (as it does whenever it lies
+in the local Voronoi cell, up to symmetry).  If a cell outside `Nbhd` contains a point strictly
+closer to `(u, v)` than the origin's site, then that cell is `(3, 2)` or `(2, 3)`.
 
-The radius bound confines the threatening cell to the eight cells `(±3, ±2)`, `(±2, ±3)`:
-a point within `√2` of `(u, v)`, which is within `√2` of the origin's site, is within `2√2` of
-the unit square, and only the `7 × 7` block minus its corners comes that close.  Those eight
-cells are the images of `(3, 2)` under the symmetries of the square (`block_three_two_all`). -/
-theorem hasBlocker_of_threat (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
-    (hr : (u - x0) ^ 2 + (v - y0) ^ 2 ≤ 2) {a b : ℤ}
+A point within `√2` of `(u, v)`, which is within `√2` of the origin's site, is within `2√2` of
+the unit square, and only the `7 × 7` block minus its corners comes that close; in the quadrant
+`u, v ≥ 1/2` the negative rows and columns are too far as well. -/
+theorem threat_cases (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
+    (hu : 1 / 2 ≤ u) (hv : 1 / 2 ≤ v) (hr : (u - x0) ^ 2 + (v - y0) ^ 2 ≤ 2) {a b : ℤ}
     (hc : (a, b) ∉ Nbhd) (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    HasBlocker u v x0 y0 := by
-  -- the test point lies in the box `[-3/2, 5/2]²`
-  have hu1 : -3 / 2 ≤ u := by nlinarith [sq_nonneg (v - y0)]
-  have hu2 : u ≤ 5 / 2 := by nlinarith [sq_nonneg (v - y0)]
-  have hv1 : -3 / 2 ≤ v := by nlinarith [sq_nonneg (u - x0)]
-  have hv2 : v ≤ 5 / 2 := by nlinarith [sq_nonneg (u - x0)]
+    (a, b) = (3, 2) ∨ (a, b) = (2, 3) := by
   -- the threat point is within `2√2` of the origin's site
   have h8 : (qx - x0) ^ 2 + (qy - y0) ^ 2 < 8 := by
     nlinarith [sq_nonneg (qx - u - (u - x0)), sq_nonneg (qy - v - (v - y0))]
-  -- hence the threatening cell is one of the eight diagonal frontier cells
   have hA : a.natAbs ≤ 3 := by
     by_contra h
     have := sq_le_of_far hqx hx0 (k := 4) (by norm_num) (by omega)
@@ -325,15 +196,21 @@ theorem hasBlocker_of_threat (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y
     have := sq_le_of_far hqy hy0 (k := 3) (by norm_num) (by omega)
     norm_num at *
     linarith
+  -- in the quadrant `u, v ≥ 1/2`, negative columns and rows are too far to threaten
+  have ha : -1 ≤ a := by
+    by_contra h
+    have : (a : ℝ) ≤ -2 := by exact_mod_cast (by omega : a ≤ -2)
+    obtain ⟨-, hq2⟩ := hqx
+    nlinarith [sq_nonneg (v - qy)]
+  have hb : -1 ≤ b := by
+    by_contra h
+    have : (b : ℝ) ≤ -2 := by exact_mod_cast (by omega : b ≤ -2)
+    obtain ⟨-, hq2⟩ := hqy
+    nlinarith [sq_nonneg (u - qx)]
   have hc' : ¬ (a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4) := hc
-  obtain ⟨hqa1, hqa2⟩ := hqx
-  obtain ⟨hqb1, hqb2⟩ := hqy
-  have ht' : (v - qy) ^ 2 + (u - qx) ^ 2 < (v - y0) ^ 2 + (u - x0) ^ 2 := by linarith
-  have cases : ((a = 3 ∨ a = -3) ∧ (b = 2 ∨ b = -2)) ∨ ((a = 2 ∨ a = -2) ∧ (b = 3 ∨ b = -3)) := by
-    omega
-  rcases cases with ⟨ha, hb⟩ | ⟨ha, hb⟩
-  · exact block_three_two_all hx0 hy0 hu1 hu2 hv1 hv2 ha hb ⟨hqa1, hqa2⟩ ⟨hqb1, hqb2⟩ ht
-  · exact HasBlocker.of_swap
-      (block_three_two_all hy0 hx0 hv1 hv2 hu1 hu2 hb ha ⟨hqb1, hqb2⟩ ⟨hqa1, hqa2⟩ ht')
+  have : (a = 3 ∧ b = 2) ∨ (a = 2 ∧ b = 3) := by omega
+  rcases this with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · exact Or.inl rfl
+  · exact Or.inr rfl
 
 end JitteredVoronoi

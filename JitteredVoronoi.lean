@@ -1,5 +1,6 @@
 import JitteredVoronoi.Basic
 import JitteredVoronoi.Nbhd
+import JitteredVoronoi.Mirror
 import JitteredVoronoi.Blocking
 import JitteredVoronoi.Witness
 import JitteredVoronoi.Voronoi
