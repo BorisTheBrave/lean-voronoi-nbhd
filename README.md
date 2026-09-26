@@ -97,7 +97,7 @@ theorem nbhd_isLeast : IsLeast {N | SufficientNbhd N} Nbhd
 
 ## Proof
 
-*Sufficiency* (`Blocking.lean`, `Mirror.lean`). Fix the origin's site `(x₀, y₀)` and a test
+*Sufficiency* (`Sufficiency.lean`, with `Blocking.lean` and `Mirror.lean`). Fix the origin's site `(x₀, y₀)` and a test
 point `p = (u, v)` of the local Voronoi cell. Say a cell *threatens* `p` if it contains a point
 strictly closer to `p` than `(x₀, y₀)`, and *blocks* `p` if all its points (other than
 `(x₀, y₀)`) are strictly closer; a blocking cell in `Nbhd` contradicts membership in the local
@@ -130,6 +130,18 @@ Here's a diagram for the `(3, 1)` witness. Sites have been selected such that:
 The green polygon shows the Voronoi cell for the `(0, 0)` site computed with/without including the `(3,1)` site, it's clearly different in each case.
 
 ![Witness for the cell (3, 1)](images/witness_3_1.svg)
+
+## Layout
+
+| module | contents |
+|---|---|
+| `Basic.lean` | `sqDist`, jitters, `voronoiOn` / `voronoi`, equivalence with the Euclidean distance |
+| `Nbhd.lean` | the neighbourhood `Nbhd`, its symmetries, and the list of its 36 non-origin cells |
+| `Mirror.lean` | the mirror `m x = 1 - x`; reflected and swapped jitters and how Voronoi cells transport |
+| `Blocking.lean` | the geometry in the octant `1/2 ≤ v ≤ u`: `far_right`, `threat_cases`, `block_three_two` |
+| `Sufficiency.lean` | `voronoi_eq_voronoiOn_Nbhd` (three `wlog`s, then the octant lemmas) and the `√2` radius bound |
+| `Witness.lean` | the seven decimal witnesses, their symmetric images, the `decide` checks, `exists_jitter_voronoiOn_ne` |
+| `Voronoi.lean` | `SufficientNbhd`, `sufficientNbhd_iff`, `nbhd_isLeast`, and the concrete consequences |
 
 ## Building
 

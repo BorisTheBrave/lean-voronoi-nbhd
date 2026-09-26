@@ -1,4 +1,4 @@
-import Mathlib
+import JitteredVoronoi.Basic
 import JitteredVoronoi.Nbhd
 
 /-!
@@ -43,6 +43,20 @@ theorem HasBlocker.mk (a' b' : ℤ) (h : Blocked u v x0 y0 a' b')
     (hN : a'.natAbs ≤ 3 ∧ b'.natAbs ≤ 3 ∧ a'.natAbs + b'.natAbs ≤ 4 := by decide)
     (h0 : (a', b') ≠ (0, 0) := by decide) : HasBlocker u v x0 y0 :=
   ⟨a', b', hN, h0, h⟩
+
+/-- A test point with a blocker is not in the local Voronoi cell: the blocking cell's site is
+strictly closer than the origin's site (it differs from the origin's site because sites are
+distinct). -/
+theorem HasBlocker.not_mem_voronoiOn {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) {p : ℝ × ℝ}
+    (h : HasBlocker p.1 p.2 (f (0, 0)).1 (f (0, 0)).2) : p ∉ voronoiOn f Nbhd (0, 0) := by
+  intro hp
+  obtain ⟨a', b', hN, h0, hB⟩ := h
+  have h1 := hp.2 (a', b') hN
+  have hne : f (a', b') ≠ f (0, 0) := fun e => h0 (hf.injective e)
+  have h2 := hB (f (a', b')).1 (hf.mem (a', b')).1 (f (a', b')).2 (hf.mem (a', b')).2
+    fun e => hne (Prod.ext (congrArg Prod.fst e) (congrArg Prod.snd e))
+  unfold sqDist at h1
+  linarith
 
 /-! ### Far centres: `u ≥ 5/2` -/
 

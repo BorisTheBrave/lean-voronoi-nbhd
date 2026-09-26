@@ -19,6 +19,13 @@ from `p`, which exceeds every squared radius that occurs.
 
 namespace JitteredVoronoi
 
+/-- Squared Euclidean distance over `ℚ`, for the decidable checks. -/
+def sqQ (p q : ℚ × ℚ) : ℚ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
+
+theorem sqQ_eq_sqDist (p q : ℚ × ℚ) : sqQ p q = sqDist (p.1, p.2) (q.1, q.2) := by
+  unfold sqDist sqQ
+  simp
+
 namespace Witness
 
 section Data
@@ -48,8 +55,9 @@ def eps : ℚ := 0.01
 /-- The end of the cell `[a, a+1)` farthest from `u` (as a point of the half-open cell). -/
 def far (u : ℚ) (a : ℤ) : ℚ := if u ≤ a + 1 / 2 then a + 1 - eps else a
 
-/-- The full jitter for the data-/
-abbrev Data.wit (w : Data) (d : ℤ × ℤ) : ℝ × ℝ :=
+/-- The jitter of a witness: the origin's point in `(0, 0)`, the chosen site in the cell under
+test, and in every other cell the corner farthest from the test point. -/
+def Data.wit (w : Data) (d : ℤ × ℤ) : ℝ × ℝ :=
   if d = (0, 0) then w.originR
   else if d = w.cell then w.siteR
   else ((far w.test.1 d.1 : ℝ), (far w.test.2 d.2 : ℝ))
@@ -130,17 +138,23 @@ theorem far_big (u : ℚ) (hu1 : -3 / 2 ≤ u) (hu2 : u ≤ 5 / 2) (a : ℤ) (h 
 
 /-! ### The jitter -/
 
-/-- The witnessing jitter for the cell `c`. -/
-def wit (c : ℤ × ℤ) (d : ℤ × ℤ) : ℝ × ℝ :=
-  if d = (0, 0) then (data c).originR
-  else if d = c then (data c).siteR
-  else ((far (data c).test.1 d.1 : ℝ), (far (data c).test.2 d.2 : ℝ))
+theorem wit_origin (w : Data) : w.wit (0, 0) = w.originR := by simp [Data.wit]
+
+theorem wit_cell (w : Data) (h0 : w.cell ≠ (0, 0)) : w.wit w.cell = w.siteR := by
+  rw [Data.wit, if_neg h0, if_pos rfl]
+
+theorem wit_far (w : Data) {d : ℤ × ℤ} (hd0 : d ≠ (0, 0)) (hd : d ≠ w.cell) :
+    w.wit d = ((far w.test.1 d.1 : ℝ), (far w.test.2 d.2 : ℝ)) := by
+  rw [Data.wit, if_neg hd0, if_neg hd]
+
+@[simp] theorem data_cell (c : ℤ × ℤ) : (data c).cell = c := rfl
 
 /-- The witnessing jitter is a half-open jitter. -/
-theorem wit_isJitterIco {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitterIco (wit c) := by
+theorem wit_isJitterIco {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitterIco (data c).wit := by
   intro d
   obtain ⟨⟨h1, h2, h3, h4⟩, ⟨h5, h6, h7, h8⟩, -⟩ := data_check c hc
-  unfold wit
+  unfold Data.wit
+  rw [data_cell]
   split_ifs with hd hd'
   · subst hd
     simp only [Set.mem_Ico]
@@ -154,12 +168,58 @@ theorem wit_isJitterIco {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitterIco (wi
     have hy := far_mem (data c).test.2 d.2
     exact ⟨⟨by exact_mod_cast hx.1, by exact_mod_cast hx.2⟩, ⟨by exact_mod_cast hy.1, by exact_mod_cast hy.2⟩⟩
 
-theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (wit c) :=
+theorem wit_isJitter {c : ℤ × ℤ} (hc : c ∈ nbhdList) : IsJitter (data c).wit :=
   (wit_isJitterIco hc).isJitter
 
-/-- The test point, as a real point. -/
-abbrev testR (c : ℤ × ℤ) : ℝ × ℝ := (data c).testR
+/-! ### The test point separates the local and the true Voronoi cell -/
+
+private theorem sqDist_testR (w : Data) (s : ℚ × ℚ) :
+    sqDist w.testR (((s.1 : ℚ) : ℝ), ((s.2 : ℚ) : ℝ)) = ((sqQ w.test s : ℚ) : ℝ) := by
+  simp only [sqQ_eq_sqDist]
+
+/-- The test point lies in the local Voronoi cell computed without `c`. -/
+theorem testR_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) (h0 : c ≠ (0, 0)) :
+    (data c).testR ∈ voronoiOn (data c).wit {c}ᶜ (0, 0) := by
+  refine ⟨Set.mem_compl_singleton_iff.2 h0.symm, fun d hd => ?_⟩
+  simp only [Set.mem_compl_iff, Set.mem_singleton_iff] at hd
+  obtain ⟨-, -, -, ⟨hu1, hu2, hv1, hv2⟩, hr⟩ := data_check c hc
+  rw [wit_origin]
+  by_cases hd0 : d = (0, 0)
+  · subst hd0; rw [wit_origin]
+  rw [wit_far (data c) hd0 (by rwa [data_cell]), sqDist_testR (data c) (data c).origin,
+    sqDist_testR (data c) (far (data c).test.1 d.1, far (data c).test.2 d.2), Rat.cast_le]
+  by_cases hwin : d.1.natAbs ≤ 5 ∧ d.2.natAbs ≤ 5
+  · obtain ⟨a, b⟩ := d
+    exact far_check c hc a (mem_window (by omega) (by omega)) b (mem_window (by omega) (by omega))
+      hd0 hd
+  · have h6 : 6 ≤ d.1.natAbs ∨ 6 ≤ d.2.natAbs := by omega
+    simp only [sqQ] at hr ⊢
+    rcases h6 with h6 | h6
+    · have := far_big (data c).test.1 hu1 hu2 d.1 h6
+      nlinarith [mul_self_nonneg ((data c).test.2 - far (data c).test.2 d.2)]
+    · have := far_big (data c).test.2 hv1 hv2 d.2 h6
+      nlinarith [mul_self_nonneg ((data c).test.1 - far (data c).test.1 d.1)]
+
+/-- The test point is not in the true Voronoi cell: the site in `c` is strictly closer. -/
+theorem testR_not_mem {c : ℤ × ℤ} (hc : c ∈ nbhdList) (h0 : c ≠ (0, 0)) :
+    (data c).testR ∉ voronoi (data c).wit (0, 0) := by
+  intro hp
+  have h := hp.2 c (Set.mem_univ c)
+  obtain ⟨-, -, hlt, -⟩ := data_check c hc
+  have ec := wit_cell (data c) (by rwa [data_cell])
+  rw [data_cell] at ec
+  rw [wit_origin, ec, sqDist_testR, sqDist_testR, Rat.cast_le] at h
+  exact absurd hlt (not_lt.2 h)
 
 end Witness
+
+/-- **Necessity.**  Every non-origin cell of `Nbhd` is needed: dropping it changes the Voronoi
+cell of the origin's point for some jitter. -/
+theorem exists_jitter_voronoiOn_ne {c : ℤ × ℤ} (hc : c ∈ Nbhd) (h0 : c ≠ (0, 0)) :
+    ∃ f : ℤ × ℤ → ℝ × ℝ, IsJitter f ∧
+      ∃ p, p ∈ voronoiOn f {c}ᶜ (0, 0) ∧ p ∉ voronoi f (0, 0) :=
+  have hc' := mem_nbhdList hc h0
+  ⟨(Witness.data c).wit, Witness.wit_isJitter hc', (Witness.data c).testR,
+    Witness.testR_mem hc' h0, Witness.testR_not_mem hc' h0⟩
 
 end JitteredVoronoi

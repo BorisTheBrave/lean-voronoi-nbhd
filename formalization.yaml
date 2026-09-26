@@ -121,7 +121,7 @@ automation:
 
 status:
   scope: >
-    Complete for the stated question. The library (six modules, about 900 lines) defines
+    Complete for the stated question. The library (seven modules, about 950 lines) defines
     jitters, Voronoi cells relative to a set of sites, and the neighbourhood, and proves the
     characterization of sufficient neighbourhoods together with its two halves and the two
     concrete consequences ((3, 0) is needed, (3, 2) is not). Equivalence with the genuine

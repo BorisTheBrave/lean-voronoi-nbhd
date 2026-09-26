@@ -17,12 +17,8 @@ namespace JitteredVoronoi
 /-- Squared Euclidean distance on `ℝ × ℝ`. -/
 def sqDist (p q : ℝ × ℝ) : ℝ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
 
-/-- Squared Euclidean distance over `ℚ`. -/
-def sqQ (p q : ℚ × ℚ) : ℚ := (p.1 - q.1) ^ 2 + (p.2 - q.2) ^ 2
-
-lemma sqQ_eq_sqDist (p q : ℚ × ℚ) : sqQ p q = sqDist (p.1, p.2) (q.1, q.2) := by
-  unfold sqDist sqQ
-  simp
+theorem sqDist_nonneg (p q : ℝ × ℝ) : 0 ≤ sqDist p q := by
+  unfold sqDist; positivity
 
 /-- `f` is a jitter: the site of cell `c` lies in the closed square cell
 `[c.1, c.1 + 1] × [c.2, c.2 + 1]`, and distinct cells get distinct sites. -/
@@ -94,9 +90,6 @@ theorem voronoi_subset_voronoiOn (f : ι → ℝ × ℝ) {N : Set ι} {x : ι} (
 end Voronoi
 
 /-! ### Euclidean distance instead of squared distance -/
-
-theorem sqDist_nonneg (p q : ℝ × ℝ) : 0 ≤ sqDist p q := by
-  unfold sqDist; positivity
 
 /-- Embed `ℝ × ℝ` into the Euclidean plane. -/
 def toE (p : ℝ × ℝ) : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2 ![p.1, p.2]
