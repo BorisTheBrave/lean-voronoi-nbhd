@@ -136,7 +136,7 @@ We introduce a notion of "blocking" squares, which are squares in `Nbhd` that we
 the circle at `p`. Thus, their site must be within the circle, which is contradicted by the assumption 
 `p ∈ voronoiOn f Nbhd (0, 0)`.
 
-The diagram shows `(2,1)` as a blocking square for a particular choice of `p` to `(x₀, y₀)`
+The diagram shows `(2,1)` as a blocking square for a particular choice of `p` and `(x₀, y₀)`
 
 ![The blocking argument](images/blocking.svg)
 
@@ -144,9 +144,16 @@ The proof proceeds as follows:
 * `far_right` shows if `u ≥ 5/2`, then `(2, min ⌊v⌋ 2)` is blocking. This eliminates all far away cases
 * Then we can show `r ≤ √2`
 * `threat_cases` establishes various bounds on `(a, b)`, which eliminate all possibilities except `(3, 2)`
-* `block_three_two` eliminates this final case, using blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)`
-  depending on where `p` is. Each case is a corner-by-corner bound followed by (non)linear
-  arithmetic.
+* `block_three_two` eliminates this final case; the blocking cell is `(2, 1)`, `(1, 2)` or `(1, 1)` depending on where `p` is depending on where `p` is. Each case is a corner-by-corner bound followed by (non)linear arithmetic.
+
+□
+
+This diagram shows the cases used by `block_three_two`. If `p` lies in a shaded region, then the given square is used as a blocker.
+
+![The cases of block_three_two](images/block_three_two.svg)
+
+In the † region some extra care is taken as it's possible for `f (0, 0)` to be in the `(1, 1)` square as we use closed intervals.
+  
 
 ## Layout
 

@@ -289,6 +289,39 @@ def diagram_blocking(path, preview=None):
         svg.preview_png(preview)
 
 
+# ----------------------------------------------------------------------------- diagram 4
+
+def diagram_block_three_two(path, preview=None):
+    """The case split of `block_three_two`: for a test point p = (u, v) in [1/2, 5/2]^2
+    threatened by the cell (3, 2), which cell blocks depends on the region containing p."""
+    box = (0, 0, 4, 3)
+    svg = Svg(box, scale=90, margin=28)
+    svg.grid(stroke="#999", width=0.8)
+    col21, col11, col12 = "#2e86c1", "#27ae60", "#8e44ad"
+    # the regions of the test point, keyed by the blocking cell
+    regions = [
+        ([(0.5, 0.5), (2.5, 0.5), (2.5, 1.5), (0.5, 1.5)], col21, "(2,1) blocks", (1.5, 1.0)),
+        ([(0.5, 1.5), (1.5, 1.5), (1.5, 2.5), (0.5, 2.5)], col12, "(1,2) blocks", (1.0, 2.0)),
+        ([(1.5, 1.5), (2.5, 1.5), (2.5, 2.5), (1.5, 2.5)], col11, "(1,1) blocks†", (2.0, 2.0)),
+    ]
+    for poly, col, label, at in regions:
+        svg.polygon(poly, col, stroke=col, width=1, opacity=0.30)
+        svg.text(at, label, size=11, anchor="middle", dy=4, fill="#222", weight="bold")
+    svg.polygon([(3, 2), (4, 2), (4, 3), (3, 3)], "#fde2c8")
+    svg.text((3.5, 2.5), "threat", size=11, anchor="middle", dy=-3, fill="#b9770e", weight="bold")
+    svg.text((3.5, 2.5), "cell (3,2)", size=11, anchor="middle", dy=11, fill="#b9770e", weight="bold")
+    svg.text((0.25, 0.25), "f(0,0)", size=10, anchor="middle", dy=-3, fill="#1a5276", weight="bold")
+    svg.text((0.25, 0.25), "in here", size=10, anchor="middle", dy=11, fill="#1a5276")
+    # axes: the indices of the squares
+    for i in range(0, 4):
+        svg.text((i + 0.5, 0), str(i), dy=16, size=11, anchor="middle", fill="#333")
+    for j in range(0, 3):
+        svg.text((0, j + 0.5), str(j), dx=-8, dy=4, size=11, anchor="end", fill="#333")
+    svg.save(path)
+    if preview:
+        svg.preview_png(preview)
+
+
 if __name__ == "__main__":
     import sys
     # optional: a directory for rough PNG previews (needs Pillow)
@@ -297,4 +330,5 @@ if __name__ == "__main__":
     diagram_witness((3, 0), "images/witness_3_0.svg", preview=pv and f"{pv}/witness_3_0.png")
     diagram_witness((3, 1), "images/witness_3_1.svg", preview=pv and f"{pv}/witness_3_1.png")
     diagram_blocking("images/blocking.svg", preview=pv and f"{pv}/blocking.png")
-    print("wrote images/voronoi.svg images/witness_3_0.svg images/witness_3_1.svg images/blocking.svg")
+    diagram_block_three_two("images/block_three_two.svg", preview=pv and f"{pv}/block_three_two.png")
+    print("wrote images/voronoi.svg images/witness_3_0.svg images/witness_3_1.svg images/blocking.svg images/block_three_two.svg")

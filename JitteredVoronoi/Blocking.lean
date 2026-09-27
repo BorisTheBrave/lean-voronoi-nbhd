@@ -104,8 +104,8 @@ theorem far_right (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1) (h
 /-! ### The cell `(3, 2)` -/
 
 /-- A threat from the cell `(3, 2)`: a point of `[3, 4] × [2, 3]` strictly closer to `(u, v)`
-than the origin's site.  The blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)` depending on where
-`(u, v)` is. -/
+than the origin's site.  The blocking cell is `(2, 1)` for `v ≤ 3/2`, `(1, 2)` for `u ≤ 3/2 < v`,
+and `(1, 1)` for `u, v > 3/2` (where no threat is needed). -/
 theorem block_three_two (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     (hu : u ≤ 5 / 2) (hv : v ≤ 5 / 2)
     (hq : qx ∈ Set.Icc (3 : ℝ) 4 ∧ qy ∈ Set.Icc (2 : ℝ) 3)
@@ -125,27 +125,21 @@ theorem block_three_two (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤
     have hQy : (2 - v) ^ 2 ≤ (v - qy) ^ 2 := by nlinarith
     linarith
   rcases le_or_gt u (3 / 2) with hu1 | hu1
-  · rcases le_or_gt v 2 with hv2 | hv2
-    · -- the cell `(1, 1)` dominates
-      refine HasBlocker.mk 1 1 ?_
-      intro x hx y hy _
-      obtain ⟨h1, h2⟩ := hx
-      obtain ⟨h3, h4⟩ := hy
-      push_cast at h1 h2 h3 h4
-      have hX : (u - x) ^ 2 ≤ (2 - u) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-      have hY : (v - y) ^ 2 ≤ (v - 1) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-      have hQy : (2 - v) ^ 2 ≤ (v - qy) ^ 2 := by nlinarith
-      nlinarith
-    · -- the cell `(1, 2)` dominates
-      refine HasBlocker.mk 1 2 ?_
-      intro x hx y hy _
-      obtain ⟨h1, h2⟩ := hx
-      obtain ⟨h3, h4⟩ := hy
-      push_cast at h1 h2 h3 h4
-      have hX : (u - x) ^ 2 ≤ (2 - u) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-      have hY : (v - y) ^ 2 ≤ (3 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
-      have hY1 : (3 - v) ^ 2 ≤ 1 := by nlinarith
-      nlinarith [sq_nonneg (v - qy)]
+  · -- the cell `(1, 2)` dominates (its far corner `(2, 3)` is no farther than `(3, 2)`,
+    -- because `u ≤ v` here)
+    refine HasBlocker.mk 1 2 ?_
+    intro x hx y hy _
+    obtain ⟨h1, h2⟩ := hx
+    obtain ⟨h3, h4⟩ := hy
+    push_cast at h1 h2 h3 h4
+    have hX : (u - x) ^ 2 ≤ (2 - u) ^ 2 := sq_le_sq' (by linarith) (by linarith)
+    have hY : (v - y) ^ 2 ≤ (3 - v) ^ 2 := sq_le_sq' (by linarith) (by linarith)
+    have key : (3 - v) ^ 2 ≤ (v - qy) ^ 2 + (5 - 2 * u) := by
+      rcases le_or_gt v 2 with hv2 | hv2
+      · have : (2 - v) ^ 2 ≤ (v - qy) ^ 2 := by nlinarith
+        nlinarith
+      · nlinarith [sq_nonneg (v - qy)]
+    nlinarith
   · -- `u > 3/2`, `v > 3/2`: every point of the cell `(1, 1)` other than the origin's site is
     -- closer than the origin's site, whatever the threat
     refine HasBlocker.mk 1 1 ?_
