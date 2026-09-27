@@ -37,6 +37,15 @@ theorem mem_Nbhd_swap {a b : ℤ} : (b, a) ∈ Nbhd ↔ (a, b) ∈ Nbhd := by
 
 theorem origin_mem_Nbhd : ((0 : ℤ), (0 : ℤ)) ∈ Nbhd := mem_Nbhd_of (by decide) (by decide) (by decide)
 
+/-- The square containing a point of `[0, 3) × [0, 3)` is in `Nbhd`. -/
+theorem floor_mem_Nbhd {u v : ℝ} (hu0 : 0 ≤ u) (hu3 : u < 3) (hv0 : 0 ≤ v) (hv3 : v < 3) :
+    (⌊u⌋, ⌊v⌋) ∈ Nbhd := by
+  have h1 : 0 ≤ ⌊u⌋ := Int.floor_nonneg.2 hu0
+  have h2 : ⌊u⌋ < 3 := Int.floor_lt.2 (by exact_mod_cast hu3)
+  have h3 : 0 ≤ ⌊v⌋ := Int.floor_nonneg.2 hv0
+  have h4 : ⌊v⌋ < 3 := Int.floor_lt.2 (by exact_mod_cast hv3)
+  exact mem_Nbhd_of (by omega) (by omega) (by omega)
+
 /-! ### The neighbourhood as a list -/
 
 /-- The 36 non-origin cells of `Nbhd`, as a list (for decidable checks). -/

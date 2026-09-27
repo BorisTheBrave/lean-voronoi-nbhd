@@ -191,9 +191,8 @@ theorem threat_cases (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     (hc : (a, b) ∉ Nbhd) (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
     (a, b) = (3, 2) ∨ (a, b) = (2, 3) := by
-  -- the threat point is within `2√2` of the origin's site
-  have h8 : (qx - x0) ^ 2 + (qy - y0) ^ 2 < 8 := by
-    nlinarith [sq_nonneg (qx - u - (u - x0)), sq_nonneg (qy - v - (v - y0))]
+
+  -- (a,b) is in the 7x7 block
   have hA : a.natAbs ≤ 3 := by
     by_contra h
     have := sq_le_of_far hqx hx0 (k := 4) (by norm_num) (by omega)
@@ -204,13 +203,17 @@ theorem threat_cases (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     have := sq_le_of_far hqy hy0 (k := 4) (by norm_num) (by omega)
     norm_num at this
     nlinarith [sq_nonneg (qx - x0)]
+  -- the threat point is within `2√2` of the origin's site
+  -- which let's us eliminate (3,3)
+  have h8 : (qx - x0) ^ 2 + (qy - y0) ^ 2 < 8 := by
+    nlinarith [sq_nonneg (qx - u - (u - x0)), sq_nonneg (qy - v - (v - y0))]
   have hcorner : ¬ (a.natAbs = 3 ∧ b.natAbs = 3) := by
     rintro ⟨ha, hb⟩
     have := sq_le_of_far hqx hx0 (k := 3) (by norm_num) (by omega)
     have := sq_le_of_far hqy hy0 (k := 3) (by norm_num) (by omega)
     norm_num at *
     linarith
-  -- in the quadrant `u, v ≥ 1/2`, negative columns and rows are too far to threaten
+  -- We're in the top right quadrant, so can eliminate negative columns and rows
   have ha : -1 ≤ a := by
     by_contra h
     have : (a : ℝ) ≤ -2 := by exact_mod_cast (by omega : a ≤ -2)
@@ -221,7 +224,9 @@ theorem threat_cases (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     have : (b : ℝ) ≤ -2 := by exact_mod_cast (by omega : b ≤ -2)
     obtain ⟨-, hq2⟩ := hqy
     nlinarith [sq_nonneg (u - qx)]
+  -- Also, eliminate (a,b) in Nbhd, but assumption
   have hc' : ¬ (a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4) := hc
+  -- We're left with (3,2) or (2,3)
   have : (a = 3 ∧ b = 2) ∨ (a = 2 ∧ b = 3) := by omega
   rcases this with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
   · exact Or.inl rfl
