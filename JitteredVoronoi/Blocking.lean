@@ -6,20 +6,27 @@ import JitteredVoronoi.Nbhd
 
 Fix the origin's point `(x0, y0)` (in the closed cell `[0, 1]²`) and a test point `p = (u, v)`.
 A cell `(a, b)` *threatens* `p` if it contains a point strictly closer to `p` than `(x0, y0)`
-is; a cell `(a', b')` *blocks* `p` if *every* point of it other than `(x0, y0)` itself is
-strictly closer to `p` than `(x0, y0)` is.  Cells are closed squares throughout; the exception
-for the point `(x0, y0)` is what a jitter's distinct sites provide.
+is.
 
-The symmetries of the square (`Mirror.lean`) let the main proof assume that the test point lies
-in the octant `1/2 ≤ v ≤ u`, so this file only treats that region:
 
-* `far_right`: if `u ≥ 5/2` the cell `(2, b')` in the row of `v` blocks — no threat is needed.
-  This is what bounds the local Voronoi cell: a test point of the local cell is within `√2` of
-  the origin's site (`sqDist_le_two_of_mem_voronoiOn_Nbhd`).
-* `threat_cases`: given that radius bound, a cell outside `Nbhd` can threaten only if it is
-  `(3, 2)` or `(2, 3)`.
+A cell `(a', b')` *blocks* `p` if *every* point of it other than `(x0, y0)` itself is
+strictly closer to `p` than `(x0, y0)`.
+In other words, if you draw a circle around `p` with (x0, y0) on the edge, then the cell `(a', b')`
+is completely inside the circle.
+
+We use this notion of blocking to eliminate possibile threats - if there is a blocking cell `(a', b')`
+in Nbhd, then the site `f (a', b')` is strictly closer to `p` than `f (0, 0)`, so p cannot be in `voronoiOn f Nbhd (0, 0)`,
+an assumption of contra_voronoi_eq_voronoiOn_Nbhd.
+
+Using wlogs in Sufficiency, we can assume the test point lies in the quadrant `u, v ≥ 1/2` and the threatening cell `(a, b)` to satisfy `b ≤ a`.
+
+There are three main theorems:
+
+* `far_right`: if `u ≥ 5/2` the cell `(2, b')` in the row of `v` blocks.
+   This is used in contra_voronoi_eq_voronoiOn_Nbhd to establish a radius bound on p.
+* `threat_cases`: given that radius bound, eliminate all possible threats except for `(3, 2)`.
 * `block_three_two`: a threat from the cell `(3, 2)` is blocked by `(2, 1)`, `(1, 1)` or
-  `(1, 2)`, depending on where the test point is; `(2, 3)` is the same with the axes swapped.
+  `(1, 2)`, depending on where the test point is.
 
 Each case is settled by choosing the blocking cell explicitly, bounding the squared distances
 corner by corner, and finishing with linear arithmetic.
@@ -178,19 +185,20 @@ theorem sq_le_of_far {a : ℤ} (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hx0 : 0
     have := sq_le_sq' (a := (k : ℝ) - 1) (b := x0 - qx) (by linarith) (by linarith)
     nlinarith
 
-/-- **Only two cells can threaten.**  Suppose the test point lies in the quadrant
+/-- **Only one cell can threaten.**  Suppose the test point lies in the quadrant
 `u, v ≥ 1/2` and within squared distance `2` of the origin's site (as it does whenever it lies
-in the local Voronoi cell, up to symmetry).  If a cell outside `Nbhd` contains a point strictly
-closer to `(u, v)` than the origin's site, then that cell is `(3, 2)` or `(2, 3)`.
+in the local Voronoi cell, up to symmetry).  If a cell `(a, b)` with `b ≤ a` outside `Nbhd`
+contains a point strictly closer to `(u, v)` than the origin's site, then that cell is `(3, 2)`.
 
 A point within `√2` of `(u, v)`, which is within `√2` of the origin's site, is within `2√2` of
 the unit square, and only the `7 × 7` block minus its corners comes that close; in the quadrant
 `u, v ≥ 1/2` the negative rows and columns are too far as well. -/
 theorem threat_cases (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     (hu : 1 / 2 ≤ u) (hv : 1 / 2 ≤ v) (hr : (u - x0) ^ 2 + (v - y0) ^ 2 ≤ 2) {a b : ℤ}
-    (hc : (a, b) ∉ Nbhd) (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
+    (hc : (a, b) ∉ Nbhd) (hab : b ≤ a)
+    (hqx : qx ∈ Set.Icc (a : ℝ) (a + 1)) (hqy : qy ∈ Set.Icc (b : ℝ) (b + 1))
     (ht : (u - qx) ^ 2 + (v - qy) ^ 2 < (u - x0) ^ 2 + (v - y0) ^ 2) :
-    (a, b) = (3, 2) ∨ (a, b) = (2, 3) := by
+    (a, b) = (3, 2) := by
 
   -- (a,b) is in the 7x7 block
   have hA : a.natAbs ≤ 3 := by
@@ -226,10 +234,8 @@ theorem threat_cases (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     nlinarith [sq_nonneg (u - qx)]
   -- Also, eliminate (a,b) in Nbhd, but assumption
   have hc' : ¬ (a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4) := hc
-  -- We're left with (3,2) or (2,3)
-  have : (a = 3 ∧ b = 2) ∨ (a = 2 ∧ b = 3) := by omega
-  rcases this with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-  · exact Or.inl rfl
-  · exact Or.inr rfl
+  have : a = 3 ∧ b = 2 := by omega
+  obtain ⟨rfl, rfl⟩ := this
+  rfl
 
 end JitteredVoronoi

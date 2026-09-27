@@ -105,13 +105,13 @@ cell.
 
 * *Symmetry* (`Mirror.lean`): reflecting the jitter in `x = 1/2` or `y = 1/2` (the mirror
   `m x = 1 - x`) or swapping the axes gives another jitter and carries the local cell along, so
-  three `wlog`s put `p` in the octant `1/2 ≤ v ≤ u`.
+  three `wlog`s put `p` in the quadrant `u, v ≥ 1/2` and the cell `(a, b)` in `b ≤ a`.
 * *Radius bound*: if `u ≥ 5/2` the column `x ∈ [2, 3]` in the row of `v` blocks (`far_right`),
   so `p` is not in the local cell; otherwise the square containing `p` is in `Nbhd` and its site
   is within `√2` of `p`, hence `|p − (x₀, y₀)| ≤ √2`.
-* *Two cells* (`threat_cases`): a threatening site is within `√2` of `p`, hence within `2√2` of
-  the unit square, and in the quadrant `u, v ≥ 1/2` the only cells outside `Nbhd` that come
-  that close are `(3, 2)` and `(2, 3)` (the latter is the former with the axes swapped).
+* *One cell* (`threat_cases`): a threatening site is within `√2` of `p`, hence within `2√2` of
+  the unit square; in the quadrant `u, v ≥ 1/2` the only cells outside `Nbhd` that come that
+  close are `(3, 2)` and `(2, 3)`, and with `b ≤ a` only `(3, 2)` remains.
 * *The cell `(3, 2)`* (`block_three_two`): the blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)`
   depending on where `p` is; each case is a corner-by-corner bound followed by (non)linear
   arithmetic, and one region needs the sites to be distinct.
@@ -138,8 +138,8 @@ The green polygon shows the Voronoi cell for the `(0, 0)` site computed with/wit
 | `Basic.lean` | `sqDist`, jitters, `voronoiOn` / `voronoi`, equivalence with the Euclidean distance |
 | `Nbhd.lean` | the neighbourhood `Nbhd`, its symmetries, and the list of its 36 non-origin cells |
 | `Mirror.lean` | the mirror `m x = 1 - x`; reflected and swapped jitters and how Voronoi cells transport |
-| `Blocking.lean` | the geometry in the octant `1/2 ≤ v ≤ u`: `far_right`, `threat_cases`, `block_three_two` |
-| `Sufficiency.lean` | `voronoi_eq_voronoiOn_Nbhd` (three `wlog`s, then the octant lemmas) and the `√2` radius bound |
+| `Blocking.lean` | the geometry in the quadrant `u, v ≥ 1/2`: `far_right`, `threat_cases`, `block_three_two` |
+| `Sufficiency.lean` | `voronoi_eq_voronoiOn_Nbhd` (three `wlog`s, then the quadrant lemmas) and the `√2` radius bound |
 | `Witness.lean` | the seven decimal witnesses, their symmetric images, the `decide` checks, `exists_jitter_voronoiOn_ne` |
 | `Voronoi.lean` | `SufficientNbhd`, `sufficientNbhd_iff`, `nbhd_isLeast`, and the concrete consequences |
 

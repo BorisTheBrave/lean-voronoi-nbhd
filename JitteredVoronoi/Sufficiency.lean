@@ -6,8 +6,8 @@ import JitteredVoronoi.Mirror
 
 For every jitter, the Voronoi cell of the origin's site computed from the sites in `Nbhd` is
 the true Voronoi cell (`voronoi_eq_voronoiOn_Nbhd`).  The proof uses the symmetries of the
-square (`Mirror.lean`) to place the test point in the octant `1/2 ≤ v ≤ u`, then the
-octant lemmas of `Blocking.lean`.
+square (`Mirror.lean`) to place the test point in the quadrant `u, v ≥ 1/2` and the cell
+`(a, b)` in `b ≤ a`, then the lemmas of `Blocking.lean`.
 -/
 
 namespace JitteredVoronoi
@@ -33,8 +33,8 @@ theorem sqDist_floor_le_two {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) (p
 /--
   If voronoi_eq_voronoiOn_Nbhd was false, then there must be a set of values as follow:
   * jitter f
-  * test point p aka (u, v), wlog in the octant 1/2 ≤ v ≤ u
-  * cell c aka (a,b) outside Nbhd
+  * test point p aka (u, v), wlog in the quadrant 1/2 ≤ u, 1/2 ≤ v
+  * cell c aka (a,b) outside Nbhd, wlog with b ≤ a
   Such that:
   * p ∈ voronoiOn f Nbhd (0, 0)
   * sqDist p (f c) < sqDist p (f (0, 0))
@@ -43,41 +43,39 @@ theorem sqDist_floor_le_two {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) (p
 
   This theorem shows that this is impossible.
 
-  threat_cases proves that (a, b) can only be (3, 2) or (2, 3)
-
-  Then block_three_two eliminates these last two cases.
+  First we use far_right to get a radius bound on p, p is within √2 of f (0, 0).
+  threat_cases then proves that (a, b) can only be (3, 2).
+  Finaly, block_three_two eliminates that particular case.
  -/
 theorem contra_voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) {p : ℝ × ℝ}
-    (hp : p ∈ voronoiOn f Nbhd (0, 0)) (hu : 1 / 2 ≤ p.1) (hv : 1 / 2 ≤ p.2) (huv : p.2 ≤ p.1)
-    {c : ℤ × ℤ} (hc : c ∉ Nbhd) (hlt : sqDist p (f c) < sqDist p (f (0, 0))) : False := by
+    (hp : p ∈ voronoiOn f Nbhd (0, 0)) (hu : 1 / 2 ≤ p.1) (hv : 1 / 2 ≤ p.2)
+    {c : ℤ × ℤ} (hc : c ∉ Nbhd) (hab : c.2 ≤ c.1) (hlt : sqDist p (f c) < sqDist p (f (0, 0))) :
+    False := by
   have hx0 : 0 ≤ (f (0, 0)).1 ∧ (f (0, 0)).1 ≤ 1 := by simpa using (hf.mem (0, 0)).1
   have hy0 : 0 ≤ (f (0, 0)).2 ∧ (f (0, 0)).2 ≤ 1 := by simpa using (hf.mem (0, 0)).2
   -- radius bound: far test points are blocked, the others have their own square in `Nbhd`
   have hr : sqDist p (f (0, 0)) ≤ 2 := by
     rcases le_or_gt (5 / 2) p.1 with hu5 | hu5
     · exact absurd hp (HasBlocker.not_mem_voronoiOn hf (far_right hx0 hy0 hu5 hv))
+    rcases le_or_gt (5 / 2) p.2 with hv5 | hv5
+    · exact absurd (mem_voronoiOn_swapXY Nbhd_swap hp)
+        (HasBlocker.not_mem_voronoiOn hf.swapXY (far_right hy0 hx0 hv5 hu))
     · exact le_trans (hp.2 _ (floor_mem_Nbhd (by linarith) (by linarith) (by linarith) (by linarith)))
         (sqDist_floor_le_two hf p)
   have hu2 : p.1 ≤ 5 / 2 := by unfold sqDist at hr; nlinarith [sq_nonneg (p.2 - (f (0, 0)).2)]
-  have hv2 : p.2 ≤ 5 / 2 := by linarith
+  have hv2 : p.2 ≤ 5 / 2 := by unfold sqDist at hr; nlinarith [sq_nonneg (p.1 - (f (0, 0)).1)]
   obtain ⟨a, b⟩ := c
   obtain ⟨hqx, hqy⟩ := hf.mem (a, b)
   unfold sqDist at hlt hr
-  rcases threat_cases hx0 hy0 hu hv hr hc hqx hqy hlt with h32 | h23
-  · -- the cell `(3, 2)`
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj h32
-    norm_num at hqx hqy
-    exact HasBlocker.not_mem_voronoiOn hf (block_three_two hx0 hy0 hu2 hv2 ⟨hqx, hqy⟩ hlt) hp
-  · -- the cell `(2, 3)`: the same with the axes swapped
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj h23
-    norm_num at hqx hqy
-    refine HasBlocker.not_mem_voronoiOn hf.swapXY ?_ (mem_voronoiOn_swapXY Nbhd_swap hp)
-    show HasBlocker p.2 p.1 (f (0, 0)).2 (f (0, 0)).1
-    exact block_three_two hy0 hx0 hv2 hu2 ⟨hqy, hqx⟩ (by linarith)
+  -- the threatening cell is `(3, 2)`
+  obtain ⟨rfl, rfl⟩ := Prod.mk.inj (threat_cases hx0 hy0 hu hv hr hc hab hqx hqy hlt)
+  norm_num at hqx hqy
+  exact HasBlocker.not_mem_voronoiOn hf (block_three_two hx0 hy0 hu2 hv2 ⟨hqx, hqy⟩ hlt) hp
 
 /-- **Sufficiency.**  For every jitter, the Voronoi cell of the origin's point is determined by
-the sites in `Nbhd`.
- -/
+the sites in `Nbhd`.  By the symmetries of the square (`Mirror.lean`) the test point may be
+assumed to lie in the quadrant `u, v ≥ 1/2` and the cell to satisfy `b ≤ a`, which is
+`contra_voronoi_eq_voronoiOn_Nbhd`. -/
 theorem voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter f) :
     voronoi f (0, 0) = voronoiOn f Nbhd (0, 0) := by
   apply Set.Subset.antisymm (voronoi_subset_voronoiOn f origin_mem_Nbhd)
@@ -85,7 +83,7 @@ theorem voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter
   refine ⟨Set.mem_univ _, ?_⟩
   intro c hcu
   clear hcu
-  -- without loss of generality the test point lies in the octant `1/2 ≤ v ≤ u`
+  -- without loss of generality the test point lies in the quadrant `u, v ≥ 1/2` and `b ≤ a`
   wlog hu : 1 / 2 ≤ p.1 generalizing f p c
   · have := this (f := mirrorX f) (p := mx p) (c := (-c.1, c.2)) hf.mirrorX
       (mem_voronoiOn_mirrorX Nbhd_mirrorX hp) (by simp [m]; linarith)
@@ -94,22 +92,22 @@ theorem voronoi_eq_voronoiOn_Nbhd {f : ℤ × ℤ → ℝ × ℝ} (hf : IsJitter
   · have := this (f := mirrorY f) (p := my p) (c := (c.1, -c.2)) hf.mirrorY
       (mem_voronoiOn_mirrorY Nbhd_swap Nbhd_mirrorX hp) (by simpa using hu) (by simp [m]; linarith)
     simpa [mirrorY_apply] using this
-  wlog huv : p.2 ≤ p.1 generalizing f p c
+  wlog hab : c.2 ≤ c.1 generalizing f p c
   · have := this (f := swapXY f) (p := p.swap) (c := c.swap) hf.swapXY
       (mem_voronoiOn_swapXY Nbhd_swap hp) (by simpa using hv) (by simpa using hu)
-      (by simp; linarith)
+      (by simp; omega)
     simpa [swapXY] using this
   by_cases hc : c ∈ Nbhd
   · exact hp.2 c hc
   /-
     At this point, we've unpacked the defitions to show if the theorem was false, then there must be a set of values as follow:
     * jitter f
-    * test point p aka (u, v), wlog 1/2 ≤ v ≤ u
-    * cell c aka (a,b) outside Nbhd
+    * test point p aka (u, v), wlog 1/2 ≤ v, 1/2 ≤ u
+    * cell c aka (a,b) outside Nbhd, wlog b ≤ a
     Such that:
     * p ∈ voronoiOn f Nbhd (0, 0)
     * sqDist p (f c) < sqDist p (f (0, 0)) -/
-  exact le_of_not_gt fun hlt => contra_voronoi_eq_voronoiOn_Nbhd hf hp hu hv huv hc hlt
+  exact le_of_not_gt fun hlt => contra_voronoi_eq_voronoiOn_Nbhd hf hp hu hv hc hab hlt
 
 /-- **Radius bound.**  A point of the Voronoi cell of the origin's site computed from `Nbhd` is
 within distance `√2` of that site. -/

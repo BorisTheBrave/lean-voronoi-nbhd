@@ -8,7 +8,7 @@ The mirror `m x = 1 - x` swaps the two ends of the unit interval and sends the c
 the cell `[-a, -a+1]`.  Reflecting a jitter in the line `x = 1/2` (or `y = 1/2`), or swapping
 the two axes, gives another jitter, and the Voronoi cell of the origin's site is carried along.
 These facts let the main proof assume, without loss of generality, that the test point lies in
-the octant `1/2 ≤ v ≤ u`.
+the quadrant `u, v ≥ 1/2` and that the cell under consideration satisfies `b ≤ a`.
 -/
 
 namespace JitteredVoronoi
