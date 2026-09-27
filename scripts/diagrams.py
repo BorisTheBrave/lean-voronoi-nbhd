@@ -256,6 +256,39 @@ def diagram_witness(cell, path, preview=None):
         svg.preview_png(preview)
 
 
+# ----------------------------------------------------------------------------- diagram 3
+
+def diagram_blocking(path, preview=None):
+    """The blocking argument: a test point p, the origin's site, a site in the far cell (3, 2)
+    strictly closer to p, and the circle about p through the origin's site.  The cell (2, 1)
+    lies entirely inside the circle, so its site (wherever it is) is closer to p than the
+    origin's site: p cannot be in the local Voronoi cell."""
+    p = (2.25, 1.25)
+    f0 = (0.95, 0.9)
+    site = (3.1, 2.1)
+    # here (2, 1) is the only cell of the neighbourhood that lies entirely inside the circle
+    r = math.dist(p, f0)
+    box = (-3, -3, 4, 4)
+    svg = Svg(box, scale=60, margin=12)
+    for (a, b) in NBHD:
+        svg.polygon([(a, b), (a + 1, b), (a + 1, b + 1), (a, b + 1)], "#e3eaf5")
+    svg.polygon([(3, 2), (4, 2), (4, 3), (3, 3)], "#fde2c8")          # the far cell
+    svg.polygon([(2, 1), (3, 1), (3, 2), (2, 2)], "#d6efd0")          # the blocking cell
+    svg.grid(stroke="#999", width=0.8)
+    svg.circle(p, r, stroke="#c0392b", width=1.5, dash="3,3")
+    svg.line(p, f0, "#c0392b", width=1, dash="2,3")
+    svg.circle(f0, 4, fill="#1a5276", radius_units=False)
+    svg.circle(site, 4, fill="#c0392b", radius_units=False)
+    svg.circle(p, 4, fill="white", stroke="#c0392b", width=2, radius_units=False)
+    svg.text(p, "p", dx=7, dy=-6, size=14, fill="#c0392b", weight="bold")
+    svg.text(f0, "f(0,0)", dx=7, dy=14, size=12, fill="#1a5276", weight="bold")
+    svg.text(site, "f(3,2)", dx=7, dy=14, size=12, fill="#c0392b", weight="bold")
+    svg.text((2.5, 1.5), "(2,1) blocks", size=11, anchor="middle", dy=4, fill="#1e6b3a", weight="bold")
+    svg.save(path)
+    if preview:
+        svg.preview_png(preview)
+
+
 if __name__ == "__main__":
     import sys
     # optional: a directory for rough PNG previews (needs Pillow)
@@ -263,4 +296,5 @@ if __name__ == "__main__":
     diagram_voronoi("images/voronoi.svg", preview=pv and f"{pv}/voronoi.png")
     diagram_witness((3, 0), "images/witness_3_0.svg", preview=pv and f"{pv}/witness_3_0.png")
     diagram_witness((3, 1), "images/witness_3_1.svg", preview=pv and f"{pv}/witness_3_1.png")
-    print("wrote images/voronoi.svg images/witness_3_0.svg images/witness_3_1.svg")
+    diagram_blocking("images/blocking.svg", preview=pv and f"{pv}/blocking.png")
+    print("wrote images/voronoi.svg images/witness_3_0.svg images/witness_3_1.svg images/blocking.svg")

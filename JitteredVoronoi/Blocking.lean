@@ -9,9 +9,9 @@ A cell `(a, b)` *threatens* `p` if it contains a point strictly closer to `p` th
 is.
 
 
-A cell `(a', b')` *blocks* `p` if *every* point of it other than `(x0, y0)` itself is
+A cell `(a', b')` *blocks* `p` if *every* point of it (other than `(x0, y0)` itself) is
 strictly closer to `p` than `(x0, y0)`.
-In other words, if you draw a circle around `p` with (x0, y0) on the edge, then the cell `(a', b')`
+In other words, if you draw a circle around `p` with `(x0, y0)` on the edge, then the cell `(a', b')`
 is completely inside the circle.
 
 We use this notion of blocking to eliminate possibile threats - if there is a blocking cell `(a', b')`
@@ -22,7 +22,7 @@ Using wlogs in Sufficiency, we can assume the test point lies in the quadrant `u
 
 There are three main theorems:
 
-* `far_right`: if `u ≥ 5/2` the cell `(2, b')` in the row of `v` blocks.
+* `far_right`: if `u ≥ 5/2` then cell `(2, min ⌊v⌋ 2)` blocks.
    This is used in contra_voronoi_eq_voronoiOn_Nbhd to establish a radius bound on p.
 * `threat_cases`: given that radius bound, eliminate all possible threats except for `(3, 2)`.
 * `block_three_two`: a threat from the cell `(3, 2)` is blocked by `(2, 1)`, `(1, 1)` or
@@ -232,8 +232,9 @@ theorem threat_cases (hx0 : 0 ≤ x0 ∧ x0 ≤ 1) (hy0 : 0 ≤ y0 ∧ y0 ≤ 1)
     have : (b : ℝ) ≤ -2 := by exact_mod_cast (by omega : b ≤ -2)
     obtain ⟨-, hq2⟩ := hqy
     nlinarith [sq_nonneg (u - qx)]
-  -- Also, eliminate (a,b) in Nbhd, but assumption
+  -- Also, eliminate (a,b) in Nbhd, by assumption
   have hc' : ¬ (a.natAbs ≤ 3 ∧ b.natAbs ≤ 3 ∧ a.natAbs + b.natAbs ≤ 4) := hc
+  -- This leaves only one case not eliminated
   have : a = 3 ∧ b = 2 := by omega
   obtain ⟨rfl, rfl⟩ := this
   rfl

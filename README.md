@@ -97,26 +97,8 @@ theorem nbhd_isLeast : IsLeast {N | SufficientNbhd N} Nbhd
 
 ## Proof
 
-*Sufficiency* (`Sufficiency.lean`, with `Blocking.lean` and `Mirror.lean`). Fix the origin's site `(x₀, y₀)` and a test
-point `p = (u, v)` of the local Voronoi cell. Say a cell *threatens* `p` if it contains a point
-strictly closer to `p` than `(x₀, y₀)`, and *blocks* `p` if all its points (other than
-`(x₀, y₀)`) are strictly closer; a blocking cell in `Nbhd` contradicts membership in the local
-cell.
 
-* *Symmetry* (`Mirror.lean`): reflecting the jitter in `x = 1/2` or `y = 1/2` (the mirror
-  `m x = 1 - x`) or swapping the axes gives another jitter and carries the local cell along, so
-  three `wlog`s put `p` in the quadrant `u, v ≥ 1/2` and the cell `(a, b)` in `b ≤ a`.
-* *Radius bound*: if `u ≥ 5/2` the column `x ∈ [2, 3]` in the row of `v` blocks (`far_right`),
-  so `p` is not in the local cell; otherwise the square containing `p` is in `Nbhd` and its site
-  is within `√2` of `p`, hence `|p − (x₀, y₀)| ≤ √2`.
-* *One cell* (`threat_cases`): a threatening site is within `√2` of `p`, hence within `2√2` of
-  the unit square; in the quadrant `u, v ≥ 1/2` the only cells outside `Nbhd` that come that
-  close are `(3, 2)` and `(2, 3)`, and with `b ≤ a` only `(3, 2)` remains.
-* *The cell `(3, 2)`* (`block_three_two`): the blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)`
-  depending on where `p` is; each case is a corner-by-corner bound followed by (non)linear
-  arithmetic, and one region needs the sites to be distinct.
-
-*Necessity* (`Witness.lean`).
+### Necessity (`Witness.lean`).
 We simply supply seven "witnesses" which are a specific assignment of sites and a point to test, which
 break if you don't include a specific cell in the neighborhood. The finitely many comparisons in the window 
 `|a|, |b| ≤ 5` are checked by `decide +kernel` for all 36 cells; cells farther out are trivially far.
@@ -130,6 +112,41 @@ Here's a diagram for the `(3, 1)` witness. Sites have been selected such that:
 The green polygon shows the Voronoi cell for the `(0, 0)` site computed with/without including the `(3,1)` site, it's clearly different in each case.
 
 ![Witness for the cell (3, 1)](images/witness_3_1.svg)
+
+
+### Sufficiency (`Sufficiency.lean`)
+
+We proceed by contradiction, supposing there was a witness like the above for `(a,b) ∉ Nbhd`.
+
+This boils down to assuming we have
+* jitter `f`
+* test point `p` aka `(u, v)`, wlog in the quadrant `1/2 ≤ u, 1/2 ≤ v`
+* square `c` aka `(a,b)` outside `Nbhd`, wlog with `b ≤ a`
+
+Such that:
+* `p ∈ voronoiOn f Nbhd (0, 0)`
+* `sqDist p (f c) < sqDist p (f (0, 0))`
+
+Then it should be clear that had we included site `f (a,b)` in the voronoi diagram, it would change the nearest 
+site of `p` from `f (0, 0)` to `f (a, b)`, breaking the assumption that sites in `Nbhd` are all you need.
+
+Fix the origin's site `(x₀, y₀)`, and let radius `r` be the distance from `p` to `(x₀, y₀)`.
+
+We introduce a notion of "blocking" squares, which are squares in `Nbhd` that we can prove are fully within 
+the circle at `p`. Thus, their site must be within the circle, which is contradicted by the assumption 
+`p ∈ voronoiOn f Nbhd (0, 0)`.
+
+The diagram shows `(2,1)` as a blocking square for a particular choice of `p` to `(x₀, y₀)`
+
+![The blocking argument](images/blocking.svg)
+
+The proof proceeds as follows:
+* `far_right` shows if `u ≥ 5/2`, then `(2, min ⌊v⌋ 2)` is blocking. This eliminates all far away cases
+* Then we can show `r ≤ √2`
+* `threat_cases` establishes various bounds on `(a, b)`, which eliminate all possibilities except `(3, 2)`
+* `block_three_two` eliminates this final case, using blocking cell is `(2, 1)`, `(1, 1)` or `(1, 2)`
+  depending on where `p` is. Each case is a corner-by-corner bound followed by (non)linear
+  arithmetic.
 
 ## Layout
 
